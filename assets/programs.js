@@ -46,7 +46,9 @@
   };
 
   // load the active program's files right here, in order, before the shell boots
-  if (active) (active.scripts || []).forEach(function (src) { document.write('<script src="' + src + '"><\/script>'); });
+  // pack files carry the same ?v= version as this file (set in index.html), so a new release isn't served from a browser's cache
+  var me = document.currentScript && document.currentScript.src, ver = me && /[?&]v=([^&]+)/.exec(me);
+  if (active) (active.scripts || []).forEach(function (src) { document.write('<script src="' + src + (ver ? "?v=" + ver[1] : "") + '"><\/script>'); });
 
   // header: the active program's name, which also switches programs
   function chrome() {

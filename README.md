@@ -12,6 +12,9 @@ One static, no-build web app that demonstrates IBM Payment Integrity across seve
 
 Links: `/` opens the picker · `/?uc=fema` opens Disaster Relief directly · `/?uc=health` opens Healthcare. The program switch next to the logo returns to the picker from anywhere. Each program opens with its short guided tour.
 
+## Releasing an update
+Script and style links in `index.html` carry a version tag (`?v=...`). Change it on every release (one find-and-replace in `index.html`) so browsers fetch the new files instead of cached ones; pack files pick up the same tag automatically.
+
 ## Add a program
 1. Create `assets/packs/<id>/` with the program's files. A pack loads after the shared engine and before boot, and overrides what it needs:
    - data (e.g. `<id>-data.js`), attached to a global like `window.FEMA`;
