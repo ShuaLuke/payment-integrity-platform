@@ -110,7 +110,12 @@
     { t: "From $17K to $100M", trail: 4, chip: "5 · Impact", n: "Now back to the top of the page. Follow the numbers from that one $17,280 claim: Sonoran's own history is $2.7M, the Meridian network $9.8M, the networks linked to it by a shared address and billing agent $20.9M, and the same patterns across all 20 detected networks $102.7M, on a payer paying $10B a year. Nobody finds that by reviewing 34,000 claim lines at $3K each. One flag opens the network, and analysts work 20 cases instead of 34,000 lines.", a: function () { retro(); closeCopilot(); window.APP.state.networkScenario = "all"; window.APP.nav("network"); window.scrollTo(0, 0); setTimeout(function () { var f = document.getElementById("nv-funnel"); if (f) { f.style.outline = "2px solid #0f62fe"; f.style.outlineOffset = "2px"; } }, 400); } }
   ];
 
-  var TOUR = (function () { try { var m = /[?&]tour=(short|full)/.exec(location.search); if (m) return m[1]; return localStorage.getItem("pivot-tour") || "full"; } catch (e) { return "full"; } })();
+  // A program pack (e.g. assets/fema/fema-tour.js) can supply its own short tour
+  // and trail; a short-only pack hides the Full / Short toggle.
+  var PACK = window.UC_PACK || {};
+  if (PACK.tour) { var PT = PACK.tour({ retro: retro, closeCopilot: closeCopilot, tab: tab, showLink: showLink, tok: function () { return linkTok; } }); SHORT_STEPS = PT.steps; TRAIL = PT.trail; }
+
+  var TOUR = (function () { if (PACK.shortOnly) return "short"; try { var m = /[?&]tour=(short|full)/.exec(location.search); if (m) return m[1]; return localStorage.getItem("pivot-tour") || "full"; } catch (e) { return "full"; } })();
   var STEPS = TOUR === "short" ? SHORT_STEPS : FULL_STEPS;
 
   var DEMO = {
@@ -143,7 +148,7 @@
       q("#demo-ribbon").innerHTML =
         '<div style="max-width:var(--page-max);margin:0 auto;padding:7px 24px">' +
         '<div style="display:flex;align-items:center;gap:10px">' +
-        '<div style="display:flex;align-items:center;gap:7px;white-space:nowrap"><i class="ti ti-player-play" style="color:#78a9ff"></i><span style="font-size:12px;font-weight:500;color:#fff">Guided demo</span>' + '<span id="demo-tour" title="Full tour or short executive tour" style="display:inline-flex;border:0.5px solid rgba(255,255,255,0.25);border-radius:4px;overflow:hidden;font-size:10.5px">' + ["full", "short"].map(function (t) { var on = TOUR === t; return '<span data-tour="' + t + '" style="padding:1px 7px;cursor:pointer;' + (on ? "background:rgba(255,255,255,0.18);color:#fff" : "color:#c1c7cd") + '">' + (t === "full" ? "Full" : "Short") + '</span>'; }).join("") + '</span>' + '<span style="font-size:11px;color:#c1c7cd">' + n + '/' + N + '</span>' + pwsChip + '</div>' +
+        '<div style="display:flex;align-items:center;gap:7px;white-space:nowrap"><i class="ti ti-player-play" style="color:#78a9ff"></i><span style="font-size:12px;font-weight:500;color:#fff">Guided demo</span>' + (PACK.shortOnly ? '' : '<span id="demo-tour" title="Full tour or short executive tour" style="display:inline-flex;border:0.5px solid rgba(255,255,255,0.25);border-radius:4px;overflow:hidden;font-size:10.5px">' + ["full", "short"].map(function (t) { var on = TOUR === t; return '<span data-tour="' + t + '" style="padding:1px 7px;cursor:pointer;' + (on ? "background:rgba(255,255,255,0.18);color:#fff" : "color:#c1c7cd") + '">' + (t === "full" ? "Full" : "Short") + '</span>'; }).join("") + '</span>') + '<span style="font-size:11px;color:#c1c7cd">' + n + '/' + N + '</span>' + pwsChip + '</div>' +
         '<div style="flex:1;display:flex;justify-content:center;align-items:center;gap:5px">' + dots + '</div>' +
         '<div style="display:flex;align-items:center;gap:6px;white-space:nowrap">' +
         '<button id="demo-prev" class="btn" style="padding:4px 9px;font-size:12px;background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.25)"' + (DEMO.i === 0 ? " disabled" : "") + '><i class="ti ti-chevron-left"></i></button>' +

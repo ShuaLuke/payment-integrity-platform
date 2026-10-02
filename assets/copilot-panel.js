@@ -5,6 +5,8 @@
   var open = false;
   var mode = "chat";   // chat | agents | letters
 
+  // A program pack can rename the subject of review (window.UC_PACK.vocab).
+  var VOC = function () { var v = (window.UC_PACK && window.UC_PACK.vocab) || {}; return { lead: v.lead || "lead", claim: v.claim || "claim", greet: v.greet }; };
   var ctxId = null; // set by explain() — a claim in focus without opening its lead page
   function ctx() {
     var onClaim = window.APP.state.view === "claim" && window.APP.state.allegationId;
@@ -78,7 +80,7 @@
     var chat = document.getElementById("cp-chat"); chat.innerHTML = "";
     var a = ctx();
     addAI(focused()
-      ? "I'm focused on lead #" + a.id + " — " + a.fwaType.toLowerCase() + " at " + a.provider.name + ". Ask me to summarize the risk, compare to peers, recommend an action, or draft a rationale."
+      ? (VOC().greet ? VOC().greet(a) : "I'm focused on lead #" + a.id + " — " + a.fwaType.toLowerCase() + " at " + a.provider.name + ".") + " Ask me to summarize the risk, compare to peers, recommend an action, or draft a rationale."
       : "Ask me about any lead. Open a lead and I'll ground my answers in its evidence, rules and network context.", false);
   }
   function addUser(t) { var d = el("msg user", t); chat().appendChild(d); scroll(); }
@@ -172,7 +174,7 @@
       return '<div class="card" style="margin:0 0 9px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:2px"><i class="ti ti-' + r.icon + '" style="color:var(--accent-d)"></i><span style="font-weight:600;font-size:12.5px">' + esc(r.role) + ' agent</span><span class="muted" style="font-size:10.5px">· ' + esc(r.focus) + '</span></div>' +
         findings + '<div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap;align-items:center"><span style="font-size:10px;color:var(--text3)">read:</span> ' + src + '</div></div>';
     }).join("");
-    alt.innerHTML = '<div style="font-size:11.5px;color:var(--text2);margin-bottom:10px"><i class="ti ti-robot" style="color:var(--accent-d)"></i> Three agents examined lead #' + a.id + ' — each grounded in the case data it reads. Findings feed the adjudication brief and any correspondence.</div>' +
+    alt.innerHTML = '<div style="font-size:11.5px;color:var(--text2);margin-bottom:10px"><i class="ti ti-robot" style="color:var(--accent-d)"></i> Three agents examined ' + VOC().lead + ' #' + a.id + ' — each grounded in the case data it reads. Findings feed the adjudication brief and any correspondence.</div>' +
       cards +
       '<div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-sparkles"></i> Grounded in this case\'s rules, model, network, coding &amp; pricing.</div>';
   }
@@ -188,7 +190,7 @@
         '<div style="font-size:11px;color:var(--text2);margin-top:3px">' + esc(t.blurb) + '</div></button>';
     }).join("");
     var kb = window.AI.knowledgeBase().map(function (k) { return '<div style="display:flex;gap:7px;padding:5px 0;border-top:0.5px solid var(--border2);font-size:11px"><i class="ti ti-book" style="color:var(--accent-d);margin-top:1px"></i><div><b>' + esc(k.title) + '</b> <span class="muted">· ' + esc(k.cite) + '</span><div style="color:var(--text2)">' + esc(k.summary) + '</div></div></div>'; }).join("");
-    alt.innerHTML = '<div style="font-size:11.5px;color:var(--text2);margin-bottom:10px"><i class="ti ti-mail" style="color:var(--accent-d)"></i> Generate a notice for lead #' + a.id + ' — ' + esc((a.provider || {}).name || "") + '. Populated with the case specifics; review before attaching or exporting.</div>' +
+    alt.innerHTML = '<div style="font-size:11.5px;color:var(--text2);margin-bottom:10px"><i class="ti ti-mail" style="color:var(--accent-d)"></i> Generate a notice for ' + VOC().lead + ' #' + a.id + ' — ' + esc((a.provider || {}).name || "") + '. Populated with the case specifics; review before attaching or exporting.</div>' +
       types +
       '<div class="card" style="margin:6px 0 0;background:var(--surface)"><div style="font-weight:600;font-size:11.5px;margin-bottom:2px"><i class="ti ti-books" style="color:var(--accent-d)"></i> Knowledge base <span class="muted" style="font-weight:400;font-size:10px">· policies the assist grounds against</span></div>' + kb + '</div>';
     alt.querySelectorAll(".cp-letter").forEach(function (b) { b.onclick = function () { draftLetter = window.AI.correspondence(a, b.getAttribute("data-t")); draftLetter.leadId = a.id; window.APP.auditLog("AI_LETTER_DRAFT", "Lead #" + a.id + " · " + draftLetter.label); renderLetterViewer(a); }; });
@@ -228,12 +230,12 @@
       setMode("chat", true);
       var a = window.DP.getAllegation(id);
       var label = { pay: "Pay", hold: "Hold", deny: "Deny" }[a.recommendedAction] || "this action";
-      addUser("Why does the model recommend " + label + " on claim #" + a.id + "?");
+      addUser("Why does the model recommend " + label + " on " + VOC().claim + " #" + a.id + "?");
       thinkThen(function () {
         var wrap = addBrief(a);
         // from the queue the action applies in place — say so, and start the reader at the question
         var go = wrap.querySelector('[data-act="go"]');
-        if (go && a.mode === "prepay" && window.APP.state.view !== "claim") go.innerHTML = '<i class="ti ti-' + ({ pay: "check", hold: "clock-hour-4", deny: "ban" }[a.recommendedAction] || "check") + '"></i> ' + label + ' this claim';
+        if (go && a.mode === "prepay" && window.APP.state.view !== "claim") go.innerHTML = '<i class="ti ti-' + ({ pay: "check", hold: "clock-hour-4", deny: "ban" }[a.recommendedAction] || "check") + '"></i> ' + label + ' this ' + VOC().claim;
         var c = chat(), q = wrap.previousElementSibling; c.scrollTop += (q || wrap).getBoundingClientRect().top - c.getBoundingClientRect().top - 8;
         window.APP.auditLog("AI_RECOMMENDATION_EXPLAINED", "Prepay claim #" + a.id + " · " + label);
       });

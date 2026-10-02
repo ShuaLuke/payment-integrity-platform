@@ -6,7 +6,7 @@
    - users: login email -> display name/role; must match the users you create in
      Supabase Authentication. */
 window.PIVOT_CONFIG = {
-  supabaseUrl: "https://ueiewicneajiyfptbkyc.supabase.co",
+  supabaseUrl: "",
   supabaseAnonKey: "sb_publishable_1dNp_NoA1jBclugYpKfFtw_IZEglUZt",
   users: {
     "analyst@example.com": { name: "Dana Whitmore", role: "analyst", initials: "DW" },
