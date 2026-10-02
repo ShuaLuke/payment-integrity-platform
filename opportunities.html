@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Payment Integrity Opportunity Map</title>
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one page — thesis + federal context, the three reuse models, the program matrix, recommended order. IBM Plex + navy/blue to match the demos. */
+:root {
+  --bg: #ffffff;
+  --surface: #f2f5fa;
+  --ink: #001141;
+  --text: #21272a;
+  --muted: #5a6472;
+  --rule: #d8dee8;
+  --accent: #0f62fe;
+  --accent-soft: #e5eeff;
+  --built: #1f7a50;
+  --built-soft: #e3f3ea;
+  --new: #8a5a00;
+  --new-soft: #fbefd8;
+  --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1222; --surface: #131c31; --ink: #e8eefc; --text: #d3d9e4; --muted: #96a1b4; --rule: #263250;
+    --accent: #78a9ff; --accent-soft: #16264a; --built: #6fd3a0; --built-soft: #12301f; --new: #f1c06a; --new-soft: #33270f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1222; --surface: #131c31; --ink: #e8eefc; --text: #d3d9e4; --muted: #96a1b4; --rule: #263250;
+  --accent: #78a9ff; --accent-soft: #16264a; --built: #6fd3a0; --built-soft: #12301f; --new: #f1c06a; --new-soft: #33270f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 24px; padding-block: 36px 48px; display: grid; gap: 28px; }
+@media (max-width: 560px) { .wrap { padding-inline: 16px; padding-block: 24px 36px; } }
+.eyebrow { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 300; color: var(--ink); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+h1 b { font-weight: 600; }
+h2 { font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 12px; }
+.lede { max-width: 68ch; color: var(--muted); font-size: 15px; margin: 0; }
+.mono { font-family: var(--mono); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* context strip */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.stat { padding: 14px 18px 14px 0; min-width: 0; }
+.stat + .stat { padding-left: 18px; border-left: 1px solid var(--rule); }
+@media (max-width: 700px) { .stat + .stat { border-left: none; padding-left: 0; border-top: 1px solid var(--rule); } }
+.stat .v { font-size: 26px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 12.5px; color: var(--muted); }
+
+/* the three models */
+.models { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .models { grid-template-columns: 1fr; } }
+.model { background: var(--surface); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.model .tag { justify-self: start; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.tag.built { background: var(--built-soft); color: var(--built); }
+.tag.new { background: var(--new-soft); color: var(--new); }
+.model h3 { margin: 0; font-size: 16px; color: var(--ink); font-weight: 600; }
+.model p { margin: 0; color: var(--muted); font-size: 13px; }
+.model .chain { font-family: var(--mono); font-size: 11.5px; color: var(--ink); }
+.model ul { margin: 2px 0 0; padding-left: 16px; font-size: 13px; }
+.model li { margin: 2px 0; }
+.model a { color: var(--accent); text-decoration: none; font-size: 12.5px; font-weight: 500; }
+.model a:hover { text-decoration: underline; }
+
+/* matrix */
+.tbl { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; min-width: 900px; }
+th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+td { padding: 12px; border-bottom: 1px solid var(--rule); vertical-align: top; font-size: 13px; }
+tr:last-child td { border-bottom: none; }
+td.prog b { color: var(--ink); font-size: 14px; display: block; }
+td.prog span { color: var(--muted); font-size: 12px; }
+td.scale b { color: var(--ink); font-size: 15px; font-variant-numeric: tabular-nums; display: block; }
+td.scale span { color: var(--muted); font-size: 12px; }
+.pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.fema { background: var(--accent-soft); color: var(--accent); }
+.pill.health { background: var(--built-soft); color: var(--built); }
+.pill.partner { background: var(--new-soft); color: var(--new); }
+.rank { font-family: var(--mono); font-weight: 500; color: var(--accent); font-size: 18px; }
+.dots { display: inline-flex; gap: 3px; vertical-align: middle; margin-right: 6px; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--rule); display: block; }
+.dots i.on { background: var(--accent); }
+
+/* order */
+.order { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; counter-reset: s; }
+@media (max-width: 860px) { .order { grid-template-columns: 1fr; } }
+.step { padding: 12px 16px 12px 0; min-width: 0; border-top: 2px solid var(--accent); }
+@media (min-width: 861px) { .step + .step { padding-left: 16px; } }
+.step .n { font-family: var(--mono); color: var(--accent); font-size: 12px; }
+.step b { display: block; color: var(--ink); font-size: 14px; margin: 2px 0 3px; }
+.step span { color: var(--muted); font-size: 12.5px; }
+.foot { font-size: 11.5px; color: var(--muted); display: grid; gap: 6px; border-top: 1px solid var(--rule); padding-top: 14px; }
+.foot a { color: var(--muted); }
+.back { display: inline-block; margin-bottom: 14px; color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 500; }
+.back:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="./">← All demos</a>
+    <div class="eyebrow">IBM Payment Integrity · Expansion</div>
+    <h1>One platform, <b>every program that pays people.</b></h1>
+    <p class="lede">The same scoring, network analytics and case management already run two demos: healthcare claims and FEMA disaster relief. Labor, Education and Treasury have the same fraud patterns, and most of them reuse what is built.</p>
+  </header>
+
+  <section class="stats" aria-label="Federal context">
+    <div class="stat"><div class="v">$186B</div><div class="l">federal improper payments, FY2025 (GAO)</div></div>
+    <div class="stat"><div class="v">$233–521B</div><div class="l">estimated annual federal fraud losses (GAO)</div></div>
+    <div class="stat"><div class="v">$100–135B</div><div class="l">pandemic unemployment insurance fraud (GAO)</div></div>
+    <div class="stat"><div class="v">$11.7B</div><div class="l">improper payments prevented, detected or recovered by Treasury, FY2025</div></div>
+  </section>
+
+  <section>
+    <h2>Three patterns cover nearly every program</h2>
+    <div class="models">
+      <div class="model">
+        <span class="tag built">Built · FEMA demo</span>
+        <h3>Applicant → award</h3>
+        <div class="chain">person → application → payment → bank account</div>
+        <p>Networks show up through shared addresses, emails, devices, accounts and documents, and through the facilitators who file for others.</p>
+        <ul><li>Unemployment insurance</li><li>Student aid</li><li>Tax refunds and credits</li><li>Rental assistance</li></ul>
+        <a href="./?uc=fema">Open the disaster relief demo →</a>
+      </div>
+      <div class="model">
+        <span class="tag built">Built · healthcare demo</span>
+        <h3>Provider → claim</h3>
+        <div class="chain">provider → claim → member → owner</div>
+        <p>Networks show up through common ownership, tax IDs, billing agents, recruiters and shared patients.</p>
+        <ul><li>Federal workers' comp (FECA)</li><li>Medicaid, Medicare, TRICARE</li><li>VA community care</li></ul>
+        <a href="./?uc=health">Open the healthcare demo →</a>
+      </div>
+      <div class="model">
+        <span class="tag new">Partner layer</span>
+        <h3>Across programs</h3>
+        <div class="chain">payment file → every program → one view</div>
+        <p>Government-wide screening already exists. IBM adds the network and case layer on top, so a ring seen in one program is visible in the next.</p>
+        <ul><li>Treasury Do Not Pay</li><li>Payment Integrity Center</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Labor, Education and Treasury</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Program</th><th>Scale</th><th>Fraud pattern</th><th>Reuses</th><th>Reuse</th><th>Who buys</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="prog"><b>Unemployment Insurance</b><span>Dept. of Labor</span></td>
+            <td class="scale"><b>$100–135B</b><span>pandemic fraud · $5.6B (14.9%) improper in FY2025</span></td>
+            <td>2M+ people claiming in several states (~$29B). One 3-bedroom house shared its address with 90 claims and its email with 145, paying out $1.5M+.</td>
+            <td><span class="pill fema">FEMA demo</span></td>
+            <td><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></span>High</td>
+            <td>50+ state workforce agencies · DOL</td>
+          </tr>
+          <tr>
+            <td class="prog"><b>Refund preparer rings</b><span>Treasury · IRS</span></td>
+            <td class="scale"><b>$21.1B</b><span>EITC improper (32.7%), FY2025</span></td>
+            <td>Largest Employee Retention Credit case: 8,000+ claims, $600M+, preparers hiding their own role. Same shape as the disaster-relief facilitator.</td>
+            <td><span class="pill fema">FEMA demo</span></td>
+            <td><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></span>High</td>
+            <td>IRS · IRS Criminal Investigation · state revenue</td>
+          </tr>
+          <tr>
+            <td class="prog"><b>Ghost students</b><span>Dept. of Education</span></td>
+            <td class="scale"><b>$1B</b><span>fraud prevented since Jan 2025 · Pell ~$40B/yr</span></td>
+            <td>Stolen identities and bots enroll fake students across many colleges to collect aid. The House passed a bill in June 2026 requiring screening of suspicious aid applications.</td>
+            <td><span class="pill fema">FEMA demo</span></td>
+            <td><span class="dots"><i class="on"></i><i class="on"></i><i></i></span>Medium</td>
+            <td>Federal Student Aid · state college systems</td>
+          </tr>
+          <tr>
+            <td class="prog"><b>Rental assistance</b><span>Treasury program · states and cities</span></td>
+            <td class="scale"><b>$3.3M+</b><span>one fake-landlord ring (Seattle)</span></td>
+            <td>Rings posed as landlords to collect pandemic rental assistance: the fake-landlord thread from the FEMA demo.</td>
+            <td><span class="pill fema">FEMA demo</span></td>
+            <td><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></span>High</td>
+            <td>State and city housing agencies</td>
+          </tr>
+          <tr>
+            <td class="prog"><b>Federal workers' comp</b><span>Dept. of Labor · FECA</span></td>
+            <td class="scale"><b>$183M → $477M</b><span>drug costs, FY2011–2016</span></td>
+            <td>Compounded-drug pharmacy rings with kickbacks to physicians and recruiters; one ring defrauded both FECA and TRICARE.</td>
+            <td><span class="pill health">Healthcare demo</span></td>
+            <td><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></span>High</td>
+            <td>DOL Office of Workers' Compensation Programs</td>
+          </tr>
+          <tr>
+            <td class="prog"><b>Do Not Pay</b><span>Treasury · Fiscal Service</span></td>
+            <td class="scale"><b>$11.7B</b><span>prevented, detected or recovered, FY2025</span></td>
+            <td>Screens 1B+ payments a year against death, debarment and other lists. Adds value with network links and case work across programs.</td>
+            <td><span class="pill partner">Partner layer</span></td>
+            <td><span class="dots"><i class="on"></i><i class="on"></i><i></i></span>Medium</td>
+            <td>Bureau of the Fiscal Service</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Suggested order</h2>
+    <div class="order">
+      <div class="step"><span class="n">1</span><b>Unemployment Insurance</b><span>Largest documented losses, 50+ buyers, closest to the FEMA demo.</span></div>
+      <div class="step"><span class="n">2</span><b>IRS preparer rings</b><span>The facilitator story carries over directly; a Treasury entry point.</span></div>
+      <div class="step"><span class="n">3</span><b>Education ghost students</b><span>Live policy pressure on FAFSA identity screening.</span></div>
+      <div class="step"><span class="n">4</span><b>Treasury Do Not Pay</b><span>The network and case layer across every program.</span></div>
+      <div class="step"><span class="n">5</span><b>FECA</b><span>A quick add-on to healthcare that links to TRICARE.</span></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div>Figures from GAO, agency releases, inspectors general and DOJ.</div>
+    <div>Sources: <a href="https://www.gao.gov/press-release/gao-reports-improper-payments-rose-estimated-186-billion-across-federal-government-fiscal-year-2025" target="_blank" rel="noopener">GAO FY2025 improper payments</a> · <a href="https://www.gao.gov/products/gao-25-108172" target="_blank" rel="noopener">GAO-25-108172</a> · <a href="https://www.gao.gov/products/gao-23-106696" target="_blank" rel="noopener">GAO-23-106696</a> · <a href="https://www.oig.dol.gov/doloiguioversightwork.htm" target="_blank" rel="noopener">DOL OIG UI oversight</a> · <a href="https://www.dol.gov/owcp/dfec/compoundeddrugmedications.htm" target="_blank" rel="noopener">DOL FECA compounded drugs</a> · <a href="https://irs.gov/compliance/criminal-investigation/seven-individuals-charged-in-largest-employee-retention-credit-scheme-case-in-the-united-states" target="_blank" rel="noopener">IRS-CI ERC case</a> · <a href="https://www.gao.gov/assets/gao-26-108694.pdf" target="_blank" rel="noopener">GAO-26-108694 (UI, EITC FY2025)</a> · <a href="https://www.ed.gov/about/news/press-release/us-department-of-education-prevents-more-1-billion-federal-student-aid-fraud-year-additional-crackdowns-expected-2026" target="_blank" rel="noopener">ED $1B release</a> · <a href="https://www.ed.gov/about/news/press-release/us-secretary-of-education-linda-mcmahon-issues-statement-passage-of-no-aid-ghost-students-act" target="_blank" rel="noopener">ED on House passage</a> · <a href="https://fiscal.treasury.gov/about-us/news/treasurys-bureau-fiscal-service-recognized-for-payment-integrity-efforts" target="_blank" rel="noopener">Fiscal Service $11.7B</a> · <a href="https://www.insidehighered.com/news/government/student-aid-policy/2026/04/27/education-dept-launches-new-fafsa-fraud-prevention" target="_blank" rel="noopener">ED FAFSA fraud tool</a> · <a href="https://www.congress.gov/bill/119th-congress/house-bill/7892" target="_blank" rel="noopener">H.R. 7892</a> · <a href="https://fiscal.treasury.gov/payment-integrity/do-not-pay-dnp" target="_blank" rel="noopener">Treasury Do Not Pay</a> · <a href="https://legacy.sba.gov/article/2026/08/06/final-member-covid-rental-assistance-fraud-ring-convicted-trial-wire-fraud-money-laundering" target="_blank" rel="noopener">Rental-assistance ring</a></div>
+    <div>IBM Payment Integrity · demos use synthetic data</div>
+  </footer>
+</div>
+
+</body>
+</html>

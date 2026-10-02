@@ -9,15 +9,28 @@
    assistant) loads for every program; a pack overrides what it needs. */
 (function () {
   var PROGRAMS = [
-    { id: "health", live: true, icon: "heart-rate-monitor", title: "Healthcare claims", sub: "Medicaid · TRICARE · commercial",
+    { id: "health", live: true, agency: "HHS · DHA · states", icon: "heart-rate-monitor", title: "Healthcare claims", sub: "Medicaid · TRICARE · commercial",
       body: "Professional, institutional, dental and pharmacy claims. Upcoding, unbundling, provider networks.",
       scripts: ["assets/packs/health/pack.js"] },
-    { id: "fema", live: true, icon: "tornado", title: "Disaster Relief", sub: "FEMA Individual Assistance",
+    { id: "fema", live: true, agency: "FEMA", icon: "tornado", title: "Disaster Relief", sub: "FEMA Individual Assistance",
       body: "Registrations and IHP awards, scored before they pay. Facilitator rings, fake landlords, shared accounts, stolen identities.",
       scripts: ["assets/packs/fema/fema-data.js", "assets/packs/fema/fema-pack.js", "assets/packs/fema/views/home.js", "assets/packs/fema/views/queue.js",
         "assets/packs/fema/views/registration.js", "assets/packs/fema/views/intake.js", "assets/packs/fema/views/network.js", "assets/packs/fema/fema-tour.js"] },
-    { id: "vha", icon: "stethoscope", title: "Veterans Health", sub: "VHA community care", body: "Community-care claims and provider networks for veterans' health care." },
-    { id: "vba", icon: "building-bank", title: "Veterans Benefits", sub: "VBA compensation & education", body: "Disability compensation, pension, GI Bill schools and fiduciaries." }
+    // planned programs (from the opportunity map, opportunities.html), shown as "Coming soon"
+    { id: "ui", agency: "Dept. of Labor", icon: "briefcase", title: "Unemployment Insurance", sub: "State workforce agencies",
+      body: "Multistate claimants, stolen identities, shared addresses, emails and bank accounts." },
+    { id: "feca", agency: "Dept. of Labor", icon: "first-aid-kit", title: "Federal workers' comp", sub: "FECA",
+      body: "Compounded-drug pharmacy rings, kickbacks to physicians and recruiters." },
+    { id: "irs", agency: "Treasury", icon: "receipt-tax", title: "Tax refunds and credits", sub: "IRS · EITC · ERC",
+      body: "Preparer rings filing for many clients and hiding their own role." },
+    { id: "dnp", agency: "Treasury", icon: "shield-check", title: "Do Not Pay", sub: "Bureau of the Fiscal Service",
+      body: "Network links and case work across every program's payments." },
+    { id: "era", agency: "Treasury · HUD · states", icon: "home-dollar", title: "Rental assistance", sub: "Emergency rental assistance",
+      body: "Fake landlords and forged leases collecting tenants' assistance." },
+    { id: "fsa", agency: "Dept. of Education", icon: "school", title: "Student aid", sub: "Federal Student Aid",
+      body: "Ghost students: stolen identities and bots enrolling at many colleges." },
+    { id: "vha", agency: "Veterans Affairs", icon: "stethoscope", title: "Veterans Health", sub: "VHA community care", body: "Community-care claims and provider networks for veterans' health care." },
+    { id: "vba", agency: "Veterans Affairs", icon: "building-bank", title: "Veterans Benefits", sub: "VBA compensation & education", body: "Disability compensation, pension, GI Bill schools and fiduciaries." }
   ];
 
   var m = /[?&]uc=([a-z0-9-]+)/i.exec(location.search);
@@ -25,6 +38,7 @@
 
   window.PROGRAMS = {
     list: PROGRAMS,
+    summary: "opportunities.html", // the one-page opportunity map
     active: active,
     // the URL for a program, keeping this page's path (works on any host or subfolder)
     href: function (id) { return location.pathname + "?uc=" + encodeURIComponent(id); },

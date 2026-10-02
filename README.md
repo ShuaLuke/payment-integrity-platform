@@ -6,8 +6,9 @@ One static, no-build web app that demonstrates IBM Payment Integrity across seve
 |---|---|---|
 | Healthcare claims (Medicaid · TRICARE · commercial) | `health` | Live |
 | Disaster Relief (FEMA Individual Assistance) | `fema` | Live |
-| Veterans Health (VHA) | `vha` | Coming soon |
-| Veterans Benefits (VBA) | `vba` | Coming soon |
+| Unemployment Insurance, federal workers' comp (DOL) · tax refunds, Do Not Pay, rental assistance (Treasury) · student aid (ED) · VHA, VBA (VA) | `ui` `feca` `irs` `dnp` `era` `fsa` `vha` `vba` | Coming soon |
+
+`opportunities.html` is the one-page opportunity map, linked from the picker; its figures are sourced in the page footer.
 
 Links: `/` opens the picker · `/?uc=fema` opens Disaster Relief directly · `/?uc=health` opens Healthcare. The program switch next to the logo returns to the picker from anywhere. Each program opens with its short guided tour.
 
