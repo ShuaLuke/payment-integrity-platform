@@ -67,8 +67,8 @@
       var flHead = ["Lead", "FWA Type", "Risk", "Confidence", "Source", "Status", "Assignee", "Provider", "NPI", "ClaimType", "Exposure"];
       var flRows = window.DP.listAllegations().map(function (r) { return ["#" + r.id, r.fwaType, r.riskScore, r.confidence + "%", r.source, r.status, r.assignee || "", r.providerName, r.providerNpi, r.claimType, r.exposurePost]; });
       window.EXPORT.wire("an", {
-        csv: function () { window.EXPORT.csv("pivot-flagged-claims", flHead, flRows); },
-        xls: function () { window.EXPORT.xls("pivot-flagged-claims", "Leads", flHead, flRows); },
+        csv: function () { window.EXPORT.csv("payment-integrity-flagged-claims", flHead, flRows); },
+        xls: function () { window.EXPORT.xls("payment-integrity-flagged-claims", "Leads", flHead, flRows); },
         pdf: function () {
           var body = window.EXPORT.kvHtml([
             ["Post-payment exposure", window.DP.usdShort(base.exposurePost)], ["Submitted for recovery", window.DP.usdShort(k.submittedForRecovery)],

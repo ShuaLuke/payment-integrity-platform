@@ -46,8 +46,8 @@
       var bHead = ["Business", "Kind", "Officer", "TIN", "Footprint", "Providers", "Flagged exposure", "Open flags", "Risk"];
       var bRows = function () { return window.DP.listBusinesses().map(function (b) { return [b.name, b.kind, b.officer || "", b.tin || "", b.states.join(" / "), b.providerCount, b.flaggedExposure, b.openAllegations, b.riskScore]; }); };
       window.EXPORT.wire("bz", {
-        csv: function () { window.EXPORT.csv("pivot-businesses", bHead, bRows()); },
-        xls: function () { window.EXPORT.xls("pivot-businesses", "Businesses", bHead, bRows()); },
+        csv: function () { window.EXPORT.csv("payment-integrity-businesses", bHead, bRows()); },
+        xls: function () { window.EXPORT.xls("payment-integrity-businesses", "Businesses", bHead, bRows()); },
         pdf: function () { window.EXPORT.pdf("Business entities — payment integrity", window.EXPORT.tableHtml(bHead, bRows().map(function (r) { return r.slice(0, 6).concat([window.DP.usd(r[6]), r[7], r[8]]); }))); }
       });
     }

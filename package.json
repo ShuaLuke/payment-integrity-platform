@@ -1,9 +1,9 @@
 {
-  "name": "pivot-demo",
+  "name": "payment-integrity-platform",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "VA PIVOT — payment-integrity demo UI (synthetic data). VA x IBM.",
+  "description": "IBM Payment Integrity — multi-program demo (synthetic data).",
   "scripts": {
     "gen:data": "node scripts/generate-data.mjs"
   }

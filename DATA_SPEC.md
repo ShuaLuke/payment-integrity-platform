@@ -1,7 +1,7 @@
-# PIVOT — data contract & swap guide
+# IBM Payment Integrity — data contract & swap guide
 
 The UI never touches raw data directly. It goes through two swappable **seams**, so the
-synthetic demo data can be replaced with Wendy's real data (or a live graph DB) without
+synthetic demo data can be replaced with real data (or a live graph DB) without
 touching any view:
 
 | Seam | Global | Today | Swap target |
@@ -96,9 +96,9 @@ listBusinesses({ all? }) · getBusiness(id)            // entities grouped by re
 
 ---
 
-## Where Wendy's deliverables land
+## Where real-data deliverables land
 
-| Incoming from Wendy | Populates |
+| Incoming deliverable | Populates |
 |---------------------|-----------|
 | Codes **Atlas** + fabricated code data | `CPT` / `DX` / `TAXONOMY` tables + `rules` / `models` in `generate-data.mjs` |
 | Real **report cards** | `provider.groupScores` + `provider.groupAttributes` (radar + spoke drill-down) |

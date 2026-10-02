@@ -5,3 +5,8 @@ dist/
 .env
 .env.*
 .claude/
+
+# presentation tooling output
+fema-clips/
+health-clips/
+__pycache__/

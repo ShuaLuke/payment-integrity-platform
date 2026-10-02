@@ -167,7 +167,7 @@
     // and its OUTPUT structure (flag / score / disposition + what it feeds downstream).
     // Rich, hand-authored specs for the rules that matter in the demo; a generic spec
     // derived from the rule's dimensions for the rest. Synthetic — real edit logic
-    // (Wendy's FAMS examples) drops in later behind this same shape.
+    // (real FAMS examples) drops in later behind this same shape.
     RULE_DETAIL: {
       rule_ncci_43235_43239: {
         logic: {

@@ -82,8 +82,8 @@
       var qHead = ["Lead", "Risk", "FWA Type", "Source", "Provider", "NPI", "State", "Exposure", "Status", "Assignee"];
       var qRows = function () { return window.DP.listAllegations().filter(function (r) { return OPEN.indexOf(r.status) >= 0; }).sort(function (a, b) { return b.riskScore - a.riskScore; }).map(function (r) { return ["#" + r.id, r.riskScore, r.fwaType, r.source, r.providerName, r.providerNpi, r.providerState, r.exposurePost, r.status, r.assignee || "Unassigned"]; }); };
       window.EXPORT.wire("q", {
-        csv: function () { window.EXPORT.csv("pivot-work-queue", qHead, qRows()); },
-        xls: function () { window.EXPORT.xls("pivot-work-queue", "Work queue", qHead, qRows()); },
+        csv: function () { window.EXPORT.csv("payment-integrity-work-queue", qHead, qRows()); },
+        xls: function () { window.EXPORT.xls("payment-integrity-work-queue", "Work queue", qHead, qRows()); },
         pdf: function () { var rows = qRows(); window.EXPORT.pdf("Work queue — open leads", "<div class='sub'>" + rows.length + " open leads · total exposure " + window.DP.usd(rows.reduce(function (s, r) { return s + r[7]; }, 0)) + "</div>" + window.EXPORT.tableHtml(qHead, rows.map(function (r) { return r.slice(0, 7).concat([window.DP.usd(r[7]), r[8], r[9]]); }))); }
       });
       draw();
@@ -162,8 +162,8 @@
       });
     };
     window.EXPORT.wire("pp", {
-      csv: function () { window.EXPORT.csv("pivot-prepay-triage", ppHead, ppRows()); },
-      xls: function () { window.EXPORT.xls("pivot-prepay-triage", "Prepay triage", ppHead, ppRows()); },
+      csv: function () { window.EXPORT.csv("payment-integrity-prepay-triage", ppHead, ppRows()); },
+      xls: function () { window.EXPORT.xls("payment-integrity-prepay-triage", "Prepay triage", ppHead, ppRows()); },
       pdf: function () { var rows = ppRows(); window.EXPORT.pdf("Pre-payment triage queue", "<div class='sub'>" + rows.length + " pending claims · " + window.DP.usd(stats.atRisk) + " at risk · " + window.DP.usd(stats.prevented) + " payment prevented</div>" + window.EXPORT.tableHtml(ppHead, rows.map(function (r) { return r.slice(0, 5).concat([window.DP.usd(r[5]), r[6], r[7]]); }))); }
     });
   }

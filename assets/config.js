@@ -7,7 +7,7 @@
      Supabase Authentication. */
 window.PIVOT_CONFIG = {
   supabaseUrl: "",
-  supabaseAnonKey: "sb_publishable_1dNp_NoA1jBclugYpKfFtw_IZEglUZt",
+  supabaseAnonKey: "", // add with supabaseUrl when the password/login comes back
   users: {
     "analyst@example.com": { name: "Dana Whitmore", role: "analyst", initials: "DW" },
     "supervisor@example.com": { name: "Karen Boyd", role: "supervisor", initials: "KB" }

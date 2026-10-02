@@ -66,4 +66,4 @@ src/data/dataset.json       canonical graph-shaped snapshot
 ## Swappable seams
 - `assets/provider.js` — `window.DP`; today reads the JSON snapshot, later a Neo4j provider returns the same shapes.
 - `assets/ai.js` — `window.AI`; today deterministic, later a live Gemini/Claude call via a serverless proxy.
-- **See [`DATA_SPEC.md`](DATA_SPEC.md)** for the full `window.DP` contract, `window.PIVOT_DATA` shapes, three swap recipes, and where each of Wendy's real-data deliverables drops in. No UI change either way.
+- **See [`DATA_SPEC.md`](DATA_SPEC.md)** for the full `window.DP` contract, `window.PIVOT_DATA` shapes, three swap recipes, and where each real-data deliverable drops in. No UI change either way.
