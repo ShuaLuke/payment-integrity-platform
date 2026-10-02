@@ -225,7 +225,6 @@
     var lbl = { prepay: '<i class="ti ti-clock-play"></i> Pre-payment', retrospective: '<i class="ti ti-history"></i> Post-payment' };
     document.querySelectorAll(".modebtn").forEach(function (b) { var m = b.getAttribute("data-mode"); if (lbl[m]) b.innerHTML = lbl[m]; });
     var mt = document.getElementById("mode-toggle"); if (mt) mt.title = "Pre-payment = score awards before they pay · Post-payment = review what's been paid";
-    var brand = document.querySelector(".brand-name"); if (brand) brand.innerHTML = 'IBM <b>Payment Integrity</b> <span style="font-weight:400;color:#a6c8ff;font-size:12px;margin-left:6px;padding-left:8px;border-left:1px solid rgba(255,255,255,0.25)">Disaster Relief</span>';
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", chrome); else chrome();
 })();

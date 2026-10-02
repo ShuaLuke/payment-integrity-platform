@@ -1,16 +1,32 @@
-# PIVOT — demo UI
+# IBM Payment Integrity — platform demo
 
-Static, no-build demo of **VA PIVOT** (Payment Integrity Validation & Oversight Tool). Analyst reviews
-post-payment claims flagged as anomalous → aggregate analysis → prioritize → drill into a claim → decide →
-update the case flow. VA × IBM identity. **All data is synthetic** (see the banner); NPIs deliberately fail the
-NPI check digit, TINs use the `00-` prefix.
+One static, no-build web app that demonstrates IBM Payment Integrity across several government programs. A **program picker** opens first; each program (use case) runs on the same shared engine — rules + ML/AI scoring, network analytics, case management with supervisor approval, the Investigative Assistant and the audit trail — with its own data, screens and guided tour. **All data is synthetic** (see the banner).
+
+| Program | `?uc=` | Status |
+|---|---|---|
+| Healthcare claims (Medicaid · TRICARE · commercial) | `health` | Live |
+| Disaster Relief (FEMA Individual Assistance) | `fema` | Live |
+| Veterans Health (VHA) | `vha` | Coming soon |
+| Veterans Benefits (VBA) | `vba` | Coming soon |
+
+Links: `/` opens the picker · `/?uc=fema` opens Disaster Relief directly · `/?uc=health` opens Healthcare. The program switch next to the logo returns to the picker from anywhere. Each program opens with its short guided tour.
+
+## Add a program
+1. Create `assets/packs/<id>/` with the program's files. A pack loads after the shared engine and before boot, and overrides what it needs:
+   - data (e.g. `<id>-data.js`), attached to a global like `window.FEMA`;
+   - wiring (`<id>-pack.js`): adds its records as leads, sets `APP.SUBS`/`APP.VIEW_AREA` (navigation), `APP.REASONS` (decision codes), wraps `window.AI` for the assistant, sets `window.UC_PACK.vocab`;
+   - screens in `views/`, each replacing a shared view by name (`Views.home`, `Views.queue`, `Views.claim`, `Views.edi`, `Views.network`, ...);
+   - the tour (`<id>-tour.js`): `window.UC_PACK.tour = function (helpers) { return { trail, steps } }`, read by `assets/demo.js`.
+2. Add one entry to `assets/programs.js` with `live: true` and the pack's scripts in load order.
+
+`assets/packs/fema/` is the worked example. Healthcare is still the shared base data and screens; `assets/packs/health/pack.js` only sets its tour mode.
 
 ## Run
 No build step, no dependencies. Serve statically:
 ```
 python3 -m http.server 8137     # then open http://localhost:8137
 ```
-(or just open `index.html`). With no Supabase configured it runs in **local mode** — no login, in-memory state. Enable login + persistence by pointing `assets/config.js` at your own Supabase.
+(or just open `index.html`). It runs in **local mode** (`supabaseUrl: ""` in `assets/config.js`): the program picker replaces login and state resets on reload. Login and persistence can be added back later by pointing `assets/config.js` at a Supabase project; give saved state a per-program key so programs don't collide.
 
 **→ Full from-scratch setup (new machine / new accounts, local · Supabase · GitHub Pages): [`SETUP.md`](SETUP.md).**
 Everything environment-specific lives in one file: [`assets/config.js`](assets/config.js).
@@ -26,6 +42,9 @@ Push this folder to a repo → Settings › Pages › Deploy from branch `main` 
 ## Structure
 ```
 index.html            app shell (chrome, nav, script order)
+assets/programs.js    the program list + loader (?uc=<id>) and the header program switch
+assets/picker.js      the program picker
+assets/packs/<id>/    one folder per program (fema = Disaster Relief; health = Healthcare)
 assets/
   styles.css          design system (locked tokens, PIVOT_DEMO_DESIGN.md §7b)
   data.js             generated: window.PIVOT_DATA
