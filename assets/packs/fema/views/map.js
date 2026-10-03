@@ -4,8 +4,11 @@
      · drill down — the nation shades states by flagged dollars; click a state to
        fly into its counties, click a county for its detail; breadcrumb and Esc
        step back out; the declaration chips jump straight to that disaster;
+     · money — nationally, a bubble per declaration sized by flagged dollars on
+       neutral states; drilled in, the counties and parishes are shaded;
      · networks — each network's dashes stream from where it is based to every
-       county it reaches. A dot marks a county where its registrations claim
+       county it reaches (nationally, only links that cross state lines). Lines
+       are one quiet ink; hovering a network traces it in blue. A dot marks a county where its registrations claim
        damage; a diamond marks a related location (an operator, device, mailbox
        or storefront based elsewhere). Curved lines cross state lines. Hover a
        line for what it represents;
@@ -35,20 +38,22 @@
   function saveTheme(v) { try { localStorage.setItem(THEME_KEY, v); } catch (e) { /* private window: keep it for this visit only */ } }
   var THEMES = {
     light: {
-      bg: "#f7f8fb", off: "#eceff4", quiet: "#e3e8ef", focus: "#e6ebf2", other: "#eef1f5", none: "#f4f6f9",
-      cStroke: "#c9d1dc", sStroke: "#b8c2d0", mesh: "#97a3b6", sel: "#001141",
-      heat: ["#fbe3e3", "#f2a7a1", "#e0605a", "#c6362f", "#8b1a13"],
-      hatchBg: "#fbe6cf", hatch: "#c77d11", desig: "#0f62fe", glow: false, heatTop: 0.8,
-      lab1: "#001141", lab2: "#8b1a13", halo: "#ffffff", pin: "#da1e28",
+      bg: "#f7f8fb", land: "#e6eaf0", off: "#eef1f5", focus: "#e3e8ef", other: "#eef1f5", none: "#f4f6f9",
+      cStroke: "#ffffff", mesh: "#ffffff", sel: "#001141",
+      heat: ["#fbe3e3", "#f2a7a1", "#e0605a", "#c6362f", "#a2191f"],
+      hatchBg: "#fbe6cf", hatch: "#c77d11", desig: "#0f62fe", glow: false,
+      ink: "#001141", inkOp: 0.45, hl: "#0f62fe", halo: "#ffffff", bubble: "#c6362f",
+      tagBg: "#ffffff", tagBd: "#dde1e6", tagTx: "#001141", tagAmt: "#a2191f", leader: "#878d96", pin: "#da1e28",
       tone: { decl: "#0043ce", seen: "#7a4a06", held: "#8b1a13", story: "#001141", net: "#0043ce", mile: "#8b1a13" },
       flash: "#0f62fe"
     },
     dark: {
-      bg: "radial-gradient(900px 500px at 60% 40%,#0a1e66 0%,#001141 70%)", off: "#08133a", quiet: "#13235a", focus: "#102061", other: "#0b1847", none: "#142668",
-      cStroke: "#24366a", sStroke: "#2b3d6b", mesh: "#4a63a3", sel: "#ffffff",
+      bg: "radial-gradient(900px 500px at 60% 40%,#0a1e66 0%,#001141 70%)", land: "#16275e", off: "#0b1847", focus: "#13235a", other: "#0b1847", none: "#142668",
+      cStroke: "#1b2d6b", mesh: "#2e4382", sel: "#ffffff",
       heat: ["#3a1430", "#6e1a2e", "#a3252b", "#d13a33", "#f2564b"],
-      hatchBg: "#3b2a10", hatch: "#e6a23c", desig: "#78a9ff", glow: true, heatTop: 1,
-      lab1: "#ffffff", lab2: "#ffb3ad", halo: "#001141", pin: "#ff6b6b",
+      hatchBg: "#3b2a10", hatch: "#e6a23c", desig: "#78a9ff", glow: true,
+      ink: "#c1c7cd", inkOp: 0.45, hl: "#78a9ff", halo: "#001141", bubble: "#e0524a",
+      tagBg: "rgba(0,17,65,.92)", tagBd: "rgba(166,200,255,.3)", tagTx: "#ffffff", tagAmt: "#ffb3ad", leader: "#5d6f99", pin: "#ff6b6b",
       tone: { decl: "#78a9ff", seen: "#ffd27a", held: "#ffb3ad", story: "#ffffff", net: "#a6c8ff", mile: "#ffb3ad" },
       flash: "#78a9ff"
     }
@@ -160,7 +165,6 @@
     '.mp-crumb button{background:none;border:none;color:var(--mp-link);font:inherit;cursor:pointer;padding:0}.mp-crumb button:hover{text-decoration:underline}' +
     '#mp-range{accent-color:#0f62fe;width:100%}' +
     '#mp-play{background:#0f62fe}#mp-play:hover{background:#0043ce}' +
-    '.mp-flow.hot{stroke-width:3.4px!important;opacity:1!important}' +
     '@media (prefers-reduced-motion: reduce){.mp-flow,.mp-pulse{animation:none}}</style>';
 
   window.Views.map = {
@@ -177,7 +181,8 @@
         chip("", "All declarations") + Object.keys(G.DESIGNATED).map(function (dr) { var d = F.DECLS[dr]; return chip(dr, dr, d.name + " · " + d.stateName); }).join("") + '</div>' +
         '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">' +
         '<div class="mp-' + st.theme + '" style="flex:1;min-width:420px;border-radius:var(--r);overflow:hidden;border:0.5px solid ' + (st.theme === "dark" ? "#001141" : "var(--border)") + ';background:' + (st.theme === "dark" ? "#001141" : "var(--card)") + ';box-shadow:' + (st.theme === "dark" ? "0 8px 28px rgba(0,17,65,.25)" : "0 1px 3px rgba(0,17,65,.06)") + '">' +
-        '<div id="mp-map" style="position:relative;height:620px;background:' + P.bg + '"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mp-link);font-size:12px"><i class="ti ti-loader-2"></i>&nbsp;Loading county boundaries…</div></div>' +
+        '<div id="mp-map" style="position:relative;height:580px;background:' + P.bg + '"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mp-link);font-size:12px"><i class="ti ti-loader-2"></i>&nbsp;Loading county boundaries…</div></div>' +
+        '<div id="mp-bar" style="display:flex;align-items:center;gap:12px;padding:9px 14px;border-top:0.5px solid var(--mp-edge);color:var(--mp-tx)"></div>' +
         '<div id="mp-legend" style="display:flex;flex-wrap:wrap;gap:6px 16px;padding:9px 14px;border-top:0.5px solid var(--mp-edge);font-size:11px;color:var(--mp-tx)"></div></div>' +
         '<div id="mp-side" style="width:320px;flex:none;display:flex;flex-direction:column;gap:10px"></div></div></div>';
       var api = null;
@@ -223,7 +228,7 @@
         var stateByFips = {}; statesF.forEach(function (f) { stateByFips[f.id] = f; });
         var countiesF = topojson.feature(topology, topology.objects.counties).features.filter(function (f) { return want[f.id.slice(0, 2)]; });
         var byKey = {}; countiesF.forEach(function (f) { f.key = f.id.slice(0, 2) + "|" + f.properties.name; byKey[f.key] = f; });
-        var proj = d3.geoAlbersUsa().fitExtent([[24, 40], [W - 24, H - 70]], { type: "FeatureCollection", features: statesF.filter(function (f) { return want[f.id]; }) });
+        var proj = d3.geoAlbersUsa().fitExtent([[24, 52], [W - 24, H - 24]], { type: "FeatureCollection", features: statesF.filter(function (f) { return want[f.id]; }) });
         var path = d3.geoPath(proj);
         var svg = d3.select(el).append("svg").attr("width", "100%").attr("height", H).attr("viewBox", "0 0 " + W + " " + H).style("display", "block").style("font-family", "IBM Plex Sans,sans-serif");
         var defs = svg.append("defs");
@@ -238,12 +243,12 @@
         var sc = function (n) { var c = F.SCHEMES[n.scheme].color; return st.theme === "dark" ? d3.color(c).brighter(0.8).formatHex() : c; };
 
         var root = svg.append("g");
-        var stP = root.append("g").selectAll("path").data(statesF).join("path").attr("d", path).attr("stroke", P.sStroke).attr("stroke-width", 0.8).attr("vector-effect", "non-scaling-stroke");
+        var stP = root.append("g").selectAll("path").data(statesF).join("path").attr("d", path).attr("stroke", P.mesh).attr("stroke-width", 0.8).attr("vector-effect", "non-scaling-stroke");
         var ctP = root.append("g").selectAll("path").data(countiesF).join("path").attr("d", path).attr("vector-effect", "non-scaling-stroke").attr("stroke", P.cStroke).attr("stroke-width", 0.5).style("cursor", "pointer").style("display", "none");
-        root.append("path").datum(topojson.mesh(topology, topology.objects.states, function (a, b) { return a !== b; })).attr("d", path).attr("fill", "none").attr("stroke", P.mesh).attr("stroke-width", 0.9).attr("vector-effect", "non-scaling-stroke").style("pointer-events", "none");
+        root.append("path").datum(topojson.mesh(topology, topology.objects.states, function (a, b) { return a !== b; })).attr("d", path).attr("fill", "none").attr("stroke", P.mesh).attr("stroke-width", 1.2).attr("vector-effect", "non-scaling-stroke").style("pointer-events", "none");
         var desig = root.append("g").style("pointer-events", "none");
         var over = svg.append("g"); // screen-space overlay: flows, line ends, hubs, pin, labels
-        var lnG = over.append("g").style("pointer-events", "none"), labG = over.append("g").style("pointer-events", "none"), hitG = over.append("g"), endG = over.append("g"), hubG = over.append("g"), pinG = over.append("g"), flashG = over.append("g").style("pointer-events", "none");
+        var bubG = over.append("g"), lnG = over.append("g").style("pointer-events", "none"), hitG = over.append("g"), endG = over.append("g"), hubG = over.append("g"), labG = over.append("g").style("pointer-events", "none"), pinG = over.append("g"), flashG = over.append("g").style("pointer-events", "none");
         var tip = d3.select(el).append("div").attr("class", "mp-glass").style("position", "absolute").style("padding", "8px 11px").style("font-size", "11px").style("line-height", "1.45").style("max-width", "290px").style("pointer-events", "none").style("opacity", 0).style("z-index", 5);
         function showTip(e, html) { var r = el.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; tip.html(html).style("opacity", 1).style("left", Math.max(4, Math.min(x + 14, W - 300)) + "px"); var th = tip.node().offsetHeight; tip.style("top", (y + th + 16 > H ? Math.max(4, y - th - 12) : y + 12) + "px"); }
         function hideTip() { tip.style("opacity", 0); }
@@ -252,14 +257,14 @@
         // breadcrumb, toasts, timeline
         var crumb = d3.select(el).append("div").attr("class", "mp-glass mp-crumb").style("position", "absolute").style("left", "12px").style("top", "12px").style("padding", "6px 11px").style("font-size", "12px").style("z-index", 4);
         var toasts = d3.select(el).append("div").style("position", "absolute").style("right", "12px").style("top", "12px").style("display", "flex").style("flex-direction", "column").style("gap", "6px").style("align-items", "flex-end").style("z-index", 4).style("pointer-events", "none");
-        var bar = d3.select(el).append("div").attr("class", "mp-glass").style("position", "absolute").style("left", "12px").style("right", "12px").style("bottom", "12px").style("padding", "8px 12px").style("display", "flex").style("align-items", "center").style("gap", "12px").style("z-index", 4);
+        var bar = d3.select("#mp-bar"); // the timeline sits under the map, not on it
         var playBtn, range, timer = null;
         function buildBar() {
           var L = TL(), D = st.dr ? F.DECLS[st.dr] : null;
           bar.html('<button id="mp-play" title="' + (D ? "Play " + D.id + " from its incident date to today" : "Play the last 13 months, across every declaration") + '" style="width:30px;height:30px;flex:none;border-radius:50%;border:none;color:#fff;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center"><i class="ti ti-player-play-filled"></i></button>' +
             '<div style="flex:1;min-width:0"><input type="range" id="mp-range" min="0" max="' + L.steps + '" step="1" value="' + (st.step == null ? L.steps : st.step) + '"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mp-mut)"><span>' + (D ? "Incident · " + fmtDate(L.t0) : fmtDate(L.t0) + " · all declarations") + '</span><span>' + (D ? (L.k > 1 ? "every " + L.k + " days · " : "daily · ") : "weekly · ") + 'Today</span></div></div>' +
             '<div style="width:190px;flex:none;text-align:right"><div id="mp-date" style="font-weight:600;font-size:13px;color:var(--mp-strong)"></div><div id="mp-when" style="font-size:10.5px;color:var(--mp-link)"></div></div>');
-          playBtn = el.querySelector("#mp-play"); range = el.querySelector("#mp-range");
+          playBtn = bar.node().querySelector("#mp-play"); range = bar.node().querySelector("#mp-range");
           playBtn.onclick = play;
           range.oninput = function () { stop(); setStep(+range.value, true); };
         }
@@ -270,56 +275,65 @@
 
         function stateVal(fips, t) { var s = { flagged: 0, regs: 0 }; Object.keys(G.counties).forEach(function (k) { if (k.slice(0, 2) !== fips) return; var v = cval(G.counties[k], st.dr, t); s.flagged += v.flagged; s.regs += v.regs; }); return s; }
         var heatI = d3.interpolateRgbBasis(P.heat);
-        var overlay = { lines: [], hubs: [], pins: [], labels: [] };
+        var heatOf = function (max) { return d3.scaleSequentialSqrt([0, max], function (x) { return heatI(0.08 + 0.92 * x); }); };
+        var overlay = { lines: [], hubs: [], pins: [], labels: [], bubbles: [] };
+        var hl = null; // the network being traced (hovered)
+        // each declaration's designated area: its center (bubble, flash) and where its tag sits
+        var TAGOFF = { "DR-9921-LA": [-40, 44, "end"], "DR-9922-MS": [-14, -54, "end"], "DR-9877-TX": [-46, -36, "end"], "DR-9864-FL": [48, 46, "start"], "DR-9851-NC": [30, -24, "start"], "DR-9806-CA": [36, 42, "start"] };
+        var DECL = {};
+        Object.keys(G.DESIGNATED).forEach(function (dr) {
+          var d = G.DESIGNATED[dr], b = boundsOf(d.counties.map(function (n) { return byKey[G.ST[d.state] + "|" + n]; }).filter(Boolean));
+          DECL[dr] = { c: [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2], today: stormTotal(dr, null).flagged };
+        });
+        var bubMax = d3.max(Object.keys(DECL), function (dr) { return DECL[dr].today; });
 
         function paint() {
           var t = tOf(st.step), lvl = st.level;
-          // states: shaded by flagged $ at the national level, a backdrop when drilled in
-          var sv = {}, smax = 1; G.states.forEach(function (f) { sv[f] = stateVal(f, t); smax = Math.max(smax, sv[f].flagged); });
-          var sHeat = d3.scaleSequentialSqrt([0, smax], function (x) { return heatI(0.12 + (P.heatTop - 0.12) * x); });
-          stP.attr("fill", function (f) {
-            if (!want[f.id]) return P.off;
-            if (lvl === "us") return sv[f.id].flagged > 0 ? sHeat(sv[f.id].flagged) : P.quiet;
-            return f.id === st.state ? P.focus : P.other;
-          }).attr("filter", function (f) { return lvl === "us" && want[f.id] && sv[f.id].flagged > smax * 0.45 ? GLOW : null; })
+          // states stay neutral: the money is a bubble per declaration nationally, shaded counties once drilled in
+          stP.attr("fill", function (f) { return lvl === "us" ? (want[f.id] ? P.land : P.off) : f.id === st.state ? P.focus : P.other; })
             .style("cursor", function (f) { return want[f.id] && (lvl === "us" || f.id !== st.state) ? "pointer" : "default"; });
           // counties of the state in focus
           var inState = function (f) { return lvl !== "us" && f.id.slice(0, 2) === st.state; };
           var vals = {}, cmax = 1;
           countiesF.forEach(function (f) { if (!inState(f)) return; var c = G.counties[f.key]; var v = c ? cval(c, st.dr, t) : null; vals[f.key] = v; if (v) cmax = Math.max(cmax, v.flagged); });
-          var cHeat = d3.scaleSequentialSqrt([0, cmax], function (x) { return heatI(0.12 + (P.heatTop - 0.12) * x); });
+          var cHeat = heatOf(cmax);
           ctP.style("display", function (f) { return inState(f) ? null : "none"; })
             .attr("fill", function (f) { var v = vals[f.key], c = G.counties[f.key]; if (!v || v.flagged < 1) return P.none; return c.outside ? "url(#mp-hatch)" : cHeat(v.flagged); })
             .attr("filter", function (f) { var v = vals[f.key]; return v && v.flagged > cmax * 0.5 && !G.counties[f.key].outside ? GLOW : null; })
-            .attr("stroke", function (f) { return f.key === st.county ? P.sel : P.cStroke; }).attr("stroke-width", function (f) { return f.key === st.county ? 2.4 : 0.5; });
+            .attr("stroke", function (f) { return f.key === st.county ? P.sel : P.cStroke; }).attr("stroke-width", function (f) { return f.key === st.county ? 2.4 : 0.8; });
           ctP.filter(function (f) { return f.key === st.county; }).raise();
           // designated areas of the selected declaration(s), in the state in focus
           var dfeat = [];
           if (lvl !== "us") (st.dr ? [st.dr] : Object.keys(G.DESIGNATED)).forEach(function (dr) { var d = G.DESIGNATED[dr]; if (G.ST[d.state] !== st.state || (t != null && t < Date.parse(F.DECLS[dr].declared))) return; d.counties.forEach(function (n) { var f = byKey[G.ST[d.state] + "|" + n]; if (f) dfeat.push(f); }); });
           desig.selectAll("path").data(dfeat, function (f) { return f.id; }).join("path").attr("d", path).attr("fill", "none").attr("stroke", P.desig).attr("stroke-width", 1.3).attr("stroke-dasharray", "3,2").attr("vector-effect", "non-scaling-stroke");
-          // networks: a line from the base to each county it reaches, ending in a marker
+          // networks: a line from the base to each county it reaches, ending in a marker.
+          // Nationally only the links that cross state lines; every link once drilled in.
           var ctr = function (k) { var f = byKey[k]; return f ? path.centroid(f) : null; };
           var maxR = d3.max(F.NETS, function (n) { return n.atRisk; });
-          overlay.lines = []; overlay.hubs = []; overlay.pins = []; overlay.labels = [];
+          overlay.lines = []; overlay.hubs = []; overlay.pins = []; overlay.labels = []; overlay.bubbles = [];
           if (st.nets) F.NETS.forEach(function (n) {
             if (!netLive(n, t, st.dr)) return;
             var hk = G.netHub(n.id), h = ctr(hk); if (!h) return;
-            var seen = {};
+            var seen = {}, add = function (o) { o.cross = o.ck.slice(0, 2) !== hk.slice(0, 2); if (lvl === "us" && !o.cross) return; overlay.lines.push(o); };
             G.areas(n.id).forEach(function (a) {
               if (a.key === hk || seen[a.key] || (st.dr && a.dr !== st.dr) || (t != null && t < a.t0)) return;
               var c = ctr(a.key); if (!c) return; seen[a.key] = 1;
-              overlay.lines.push({ id: n.id + a.key, kind: "damage", net: n, hk: hk, ck: a.key, area: a, a: h, b: c, cross: a.key.slice(0, 2) !== hk.slice(0, 2) });
+              add({ id: n.id + a.key, kind: "damage", net: n, hk: hk, ck: a.key, area: a, a: h, b: c });
             });
             G.related(n.id).forEach(function (r) {
               if (r.key === hk || seen[r.key]) return; var c = ctr(r.key); if (!c) return; seen[r.key] = 1;
-              overlay.lines.push({ id: n.id + r.key + "r", kind: "related", net: n, hk: hk, ck: r.key, label: r.label, a: h, b: c, cross: r.key.slice(0, 2) !== hk.slice(0, 2) });
+              add({ id: n.id + r.key + "r", kind: "related", net: n, hk: hk, ck: r.key, label: r.label, a: h, b: c });
             });
-            overlay.hubs.push({ id: n.id, n: n, hk: hk, p: h, r: 4 + 8 * Math.sqrt(n.atRisk / maxR) });
+            overlay.hubs.push({ id: n.id, n: n, hk: hk, p: h, r: 3.5 + 3.5 * Math.sqrt(n.atRisk / maxR) });
           });
           if ((!st.dr || st.dr === "DR-9921-LA") && (t == null || t >= SEED_T)) { var tp = ctr(G.key("Terrebonne", "LA")); if (tp) overlay.pins.push({ id: "seed", p: [tp[0] + 6, tp[1] - 6] }); }
-          // labels: state totals nationally, county names when drilled in
-          if (lvl === "us") G.states.forEach(function (f) { var s = stateByFips[f]; if (!s || sv[f].flagged < 1) return; var c = path.centroid(s); overlay.labels.push({ id: "s" + f, p: c, t1: ABBR[f], t2: big(sv[f].flagged) }); });
-          else countiesF.forEach(function (f) { var v = vals[f.key]; if (!v || v.flagged < 1) return; overlay.labels.push({ id: f.key, p: path.centroid(f), t1: f.properties.name, t2: big(v.flagged) }); });
+          // nationally: a bubble and a tag per declaration; drilled in: a tag per county
+          if (lvl === "us") (st.dr ? [st.dr] : Object.keys(DECL)).forEach(function (dr) {
+            var v = stormTotal(dr, t); if (v.flagged < 1) return;
+            overlay.bubbles.push({ id: dr, dr: dr, p: DECL[dr].c, r: 5 + 19 * Math.sqrt(v.flagged / bubMax), v: v });
+            var o = TAGOFF[dr]; overlay.labels.push({ id: "t" + dr, p: DECL[dr].c, off: [o[0], o[1]], anchor: o[2], t1: dr, t2: big(v.flagged) });
+          });
+          else countiesF.forEach(function (f) { var v = vals[f.key]; if (!v || v.flagged < 1) return; overlay.labels.push({ id: f.key, p: path.centroid(f), off: [0, 16], anchor: "middle", t1: f.properties.name, t2: big(v.flagged) }); });
           drawOverlay(); crumbs(); legend(); clock(); side();
         }
         // what a network line represents, at the current playback time
@@ -335,27 +349,50 @@
           if (d.cross) h += "<div style='margin-top:4px;font-weight:600;color:var(--mp-strong)'><i class='ti ti-arrows-cross'></i> Crosses state lines</div>";
           return h;
         }
-        function hot(d, on) { lnG.selectAll("path").filter(function (x) { return x.id === d.id; }).classed("hot", on); }
+        function hubTip(d) {
+          var S = F.SCHEMES[d.n.scheme];
+          return "<div style='color:" + sc(d.n) + ";font-weight:600;margin-bottom:2px'>" + esc(S.label) + "</div>" + B(esc(d.n.name)) + "<div>Based in " + esc(countyLabel(G.counties[d.hk])) + " · " + esc(lc(S.hub)) + "<br>" + d.n.regs.toLocaleString() + " registrations · " + big(d.n.atRisk) + " at risk<br>" + d.n.drs.join(" · ") + "<br>" + LINK("Click to open the network") + "</div>";
+        }
+        // lines are one quiet ink; hovering a network traces it in the accent blue and fades the rest
+        function emph() {
+          var on = function (d) { return !!hl && d.net.id === hl; }, dim = function (d) { return !!hl && d.net.id !== hl; };
+          lnG.selectAll("path").attr("stroke", function (d) { return on(d) ? P.hl : P.ink; }).attr("stroke-opacity", function (d) { return on(d) ? 1 : dim(d) ? P.inkOp * 0.35 : P.inkOp; }).attr("stroke-width", function (d) { return on(d) ? 2.6 : 1.4; });
+          endG.selectAll("g").attr("opacity", function (d) { return dim(d) ? 0.3 : on(d) ? 1 : 0.8; }).select("path")
+            .attr("fill", function (d) { return d.kind === "related" ? P.halo : on(d) ? P.hl : P.ink; }).attr("stroke", function (d) { return d.kind === "related" ? (on(d) ? P.hl : P.ink) : P.halo; });
+          hubG.selectAll("circle").attr("opacity", function (d) { return hl && d.id !== hl ? 0.45 : 1; }).attr("stroke", function (d) { return d.id === hl ? P.hl : P.halo; }).attr("stroke-width", function (d) { return d.id === hl ? 2.4 : 1.5; });
+          if (hl) { lnG.selectAll("path").filter(on).raise(); endG.selectAll("g").filter(on).raise(); }
+        }
         function drawOverlay() {
-          var lineIn = function (sel) { return sel.on("mouseover", function (e, d) { hot(d, true); showTip(e, lineTip(d)); }).on("mousemove", function (e, d) { showTip(e, lineTip(d)); }).on("mouseout", function (e, d) { hot(d, false); hideTip(); }); };
+          var trace = function (sel, tipf) {
+            return sel.on("mouseover", function (e, d) { hl = (d.net || d.n).id; emph(); showTip(e, tipf(d)); }).on("mousemove", function (e, d) { showTip(e, tipf(d)); })
+              .on("mouseout", function () { hl = null; emph(); hideTip(); });
+          };
+          bubG.selectAll("circle").data(overlay.bubbles, function (d) { return d.id; }).join("circle").attr("r", function (d) { return d.r; }).attr("fill", P.bubble).attr("fill-opacity", 0.72).attr("stroke", P.halo).attr("stroke-width", 1.5).style("cursor", "pointer")
+            .on("mouseover", function (e, d) { var D = F.DECLS[d.dr]; showTip(e, "<div style='color:var(--mp-link);font-weight:600;margin-bottom:2px'>" + d.dr + "</div>" + B(esc(D.name)) + "<div>" + esc(D.stateName) + " · declared " + D.declared + "<br>" + big(d.v.flagged) + " flagged · " + d.v.regs.toLocaleString() + " registrations<br>" + LINK("Click to drill in") + "</div>"); })
+            .on("mouseout", hideTip).on("click", function (e, d) { e.stopPropagation(); hideTip(); drillState(G.ST[G.DESIGNATED[d.dr].state]); });
           lnG.selectAll("path").data(overlay.lines, function (d) { return d.id; }).join("path").attr("class", "mp-flow").attr("fill", "none")
-            .attr("stroke", function (d) { return sc(d.net); }).attr("stroke-width", function (d) { return d.cross ? 2 : 1.6; })
-            .attr("stroke-dasharray", function (d) { return d.kind === "related" ? "2 5" : "6 6"; }).attr("stroke-linecap", "round").attr("opacity", 0.9);
-          lineIn(hitG.selectAll("path").data(overlay.lines, function (d) { return d.id; }).join("path").attr("fill", "none").attr("stroke", "#000").attr("stroke-opacity", 0).attr("stroke-width", 14).style("pointer-events", "stroke").style("cursor", "help"));
+            .attr("stroke-dasharray", function (d) { return d.kind === "related" ? "2 5" : "6 6"; }).attr("stroke-linecap", "round");
+          trace(hitG.selectAll("path").data(overlay.lines, function (d) { return d.id; }).join("path").attr("fill", "none").attr("stroke", "#000").attr("stroke-opacity", 0).attr("stroke-width", 14).style("pointer-events", "stroke").style("cursor", "help"), lineTip);
           var ends = endG.selectAll("g").data(overlay.lines, function (d) { return d.id; }).join(function (en) { var gg = en.append("g").style("cursor", "help"); gg.append("path"); return gg; });
-          ends.select("path").attr("d", function (d) { return d.kind === "related" ? "M0,-4.6L4.6,0L0,4.6L-4.6,0Z" : d3.symbol(d3.symbolCircle, 30)(); })
-            .attr("fill", function (d) { return d.kind === "related" ? P.halo : sc(d.net); }).attr("stroke", function (d) { return d.kind === "related" ? sc(d.net) : P.halo; }).attr("stroke-width", function (d) { return d.kind === "related" ? 1.8 : 1.2; });
-          lineIn(ends);
-          hubG.selectAll("circle").data(overlay.hubs, function (d) { return d.id; }).join("circle").attr("r", function (d) { return d.r; }).attr("fill", P.halo).attr("stroke", function (d) { return sc(d.n); }).attr("stroke-width", 2.4).attr("filter", GLOW).style("cursor", "pointer")
-            .on("mouseover", function (e, d) { showTip(e, "<div style='color:" + sc(d.n) + ";font-weight:600;margin-bottom:2px'>" + esc(F.SCHEMES[d.n.scheme].label) + "</div>" + B(esc(d.n.name)) + "<div>Based in " + esc(countyLabel(G.counties[d.hk])) + " · " + esc(lc(F.SCHEMES[d.n.scheme].hub)) + "<br>" + d.n.regs.toLocaleString() + " registrations · " + big(d.n.atRisk) + " at risk<br>" + d.n.drs.join(" · ") + "<br>" + LINK("Click to open the network") + "</div>"); })
-            .on("mouseout", hideTip).on("click", function (e, d) { e.stopPropagation(); window.APP.state.networkScenario = d.id; window.APP.nav("network"); });
+          ends.select("path").attr("d", function (d) { return d.kind === "related" ? "M0,-4.4L4.4,0L0,4.4L-4.4,0Z" : d3.symbol(d3.symbolCircle, 24)(); }).attr("stroke-width", function (d) { return d.kind === "related" ? 1.6 : 1; });
+          trace(ends, lineTip);
+          trace(hubG.selectAll("circle").data(overlay.hubs, function (d) { return d.id; }).join("circle").attr("r", function (d) { return d.r; }).attr("fill", function (d) { return sc(d.n); }).style("cursor", "pointer"), hubTip)
+            .on("click", function (e, d) { e.stopPropagation(); window.APP.state.networkScenario = d.id; window.APP.nav("network"); });
           var pins = pinG.selectAll("g").data(overlay.pins, function (d) { return d.id; }).join(function (en) { var gg = en.append("g").style("cursor", "pointer"); gg.append("circle").attr("class", "mp-pulse").attr("r", 6).attr("fill", "none").attr("stroke", P.pin).attr("stroke-width", 2); gg.append("circle").attr("r", 5).attr("fill", P.pin).attr("stroke", "#fff").attr("stroke-width", 1.5); return gg; });
           pins.on("mouseover", function (e) { showTip(e, "<div style='color:" + P.tone.held + ";font-weight:600;margin-bottom:2px'>Held before payment</div>" + B("R-104417 · " + usd(F.SEED_AMOUNT)) + "<div>Kendra L. Batiste · Houma, Terrebonne Parish<br>" + LINK("Click to open the registration") + "</div>"); })
             .on("mouseout", hideTip).on("click", function (e) { e.stopPropagation(); window.APP.openAllegation(F.SEED); });
-          var labs = labG.selectAll("g").data(overlay.labels, function (d) { return d.id; }).join(function (en) { var gg = en.append("g"); gg.append("text").attr("class", "l1"); gg.append("text").attr("class", "l2"); return gg; });
-          labs.select(".l1").text(function (d) { return d.t1; }).attr("text-anchor", "middle").attr("font-size", 11).attr("font-weight", 600).attr("fill", P.lab1).attr("paint-order", "stroke").attr("stroke", P.halo).attr("stroke-width", 3);
-          labs.select(".l2").text(function (d) { return d.t2; }).attr("text-anchor", "middle").attr("dy", 12).attr("font-size", 10).attr("font-family", "IBM Plex Mono,monospace").attr("font-weight", 600).attr("fill", P.lab2).attr("paint-order", "stroke").attr("stroke", P.halo).attr("stroke-width", 3);
-          place();
+          // tags: name + flagged $ on a small chip (declarations get a leader line to their bubble)
+          labG.selectAll("g").data(overlay.labels, function (d) { return d.id; }).join(function (en) { var gg = en.append("g"); gg.append("line"); gg.append("rect"); var tx = gg.append("text"); tx.append("tspan").attr("class", "l1"); tx.append("tspan").attr("class", "l2"); return gg; })
+            .each(function (d) {
+              var gg = d3.select(this), tx = gg.select("text").attr("font-size", 11).attr("fill", P.tagTx);
+              tx.select(".l1").text(d.t1).attr("font-weight", 600);
+              tx.select(".l2").text(d.t2).attr("dx", 5).attr("font-family", "IBM Plex Mono,monospace").attr("font-weight", 600).attr("fill", P.tagAmt);
+              var w = tx.node().getBBox().width, x = d.anchor === "end" ? -w : d.anchor === "middle" ? -w / 2 : 0;
+              tx.attr("x", x).attr("y", 4);
+              gg.select("rect").attr("x", x - 6).attr("y", -9).attr("width", w + 12).attr("height", 20).attr("rx", 4).attr("fill", P.tagBg).attr("stroke", P.tagBd).attr("stroke-width", 0.6);
+              gg.select("line").attr("x2", -d.off[0]).attr("y2", -d.off[1]).attr("stroke", P.leader).attr("stroke-width", 0.8).style("display", d.anchor === "middle" ? "none" : null);
+            });
+          emph(); place();
         }
         // overlay positions follow the zoom, in screen pixels; cross-state links arc
         function place() {
@@ -369,8 +406,9 @@
           lnG.selectAll("path").attr("d", dOf); hitG.selectAll("path").attr("d", dOf);
           endG.selectAll("g").attr("transform", function (d) { var q = Pt(d.b); return "translate(" + q[0] + "," + q[1] + ")"; });
           hubG.selectAll("circle").attr("cx", function (d) { return Pt(d.p)[0]; }).attr("cy", function (d) { return Pt(d.p)[1]; });
+          bubG.selectAll("circle").attr("cx", function (d) { return Pt(d.p)[0]; }).attr("cy", function (d) { return Pt(d.p)[1]; });
           pinG.selectAll("g").attr("transform", function (d) { var q = Pt(d.p); return "translate(" + q[0] + "," + q[1] + ")"; });
-          labG.selectAll("g").attr("transform", function (d) { var q = Pt(d.p); return "translate(" + q[0] + "," + (q[1] + 14) + ")"; })
+          labG.selectAll("g").attr("transform", function (d) { var q = Pt(d.p); return "translate(" + (q[0] + d.off[0]) + "," + (q[1] + d.off[1]) + ")"; })
             .attr("opacity", function () { return st.level === "us" || tr.k >= 2.5 ? 1 : 0; });
         }
         function crumbs() {
@@ -383,23 +421,22 @@
           crumb.selectAll("button").on("click", function () { var c = this.getAttribute("data-c"); if (c === "us") toNation(); else drillState(st.state); });
         }
         function legend() {
-          var stops = [0, 0.25, 0.5, 0.75, 1].map(function (x) { return heatI(0.12 + (P.heatTop - 0.12) * x); });
+          var stops = [0, 0.25, 0.5, 0.75, 1].map(function (x) { return heatI(0.08 + 0.92 * x); });
           var item = function (sw, l) { return '<span style="display:flex;align-items:center;gap:6px">' + sw + l + '</span>'; };
-          var ink = st.theme === "dark" ? "#a6c8ff" : "#4d5358";
+          var ink = P.ink, op = P.inkOp + 0.25;
           document.getElementById("mp-legend").innerHTML =
-            item('<span style="display:inline-flex;height:9px;width:70px;border-radius:2px;overflow:hidden">' + stops.map(function (c) { return '<span style="flex:1;background:' + c + '"></span>'; }).join("") + '</span>', "Flagged $") +
+            item('<svg width="14" height="14"><circle cx="7" cy="7" r="6" fill="' + P.bubble + '" fill-opacity=".72"/></svg>', "Flagged $ by declaration") +
+            item('<span style="display:inline-flex;height:9px;width:56px;border-radius:2px;overflow:hidden">' + stops.map(function (c) { return '<span style="flex:1;background:' + c + '"></span>'; }).join("") + '</span>', "by county, drilled in") +
             item('<span style="width:14px;height:9px;border:1.3px dashed ' + P.desig + ';border-radius:2px"></span>', "Designated area") +
-            item('<span style="width:14px;height:9px;border-radius:2px;background:repeating-linear-gradient(45deg,' + P.hatch + ' 0 2px,' + P.hatchBg + ' 2px 5px)"></span>', "Claimed outside a declared area") +
-            item('<svg width="12" height="12"><circle cx="6" cy="6" r="4.2" fill="' + P.halo + '" stroke="' + ink + '" stroke-width="2"/></svg>', "Where a network is based") +
-            item('<svg width="26" height="10"><line x1="1" y1="5" x2="20" y2="5" stroke="' + ink + '" stroke-width="1.6" stroke-dasharray="5 3"/><circle cx="21" cy="5" r="3" fill="' + ink + '"/></svg>', "Damage claimed there") +
-            item('<svg width="26" height="10"><line x1="1" y1="5" x2="19" y2="5" stroke="' + ink + '" stroke-width="1.6" stroke-dasharray="2 3"/><path d="M21,1L25,5L21,9L17,5Z" fill="' + P.halo + '" stroke="' + ink + '" stroke-width="1.4"/></svg>', "Related location") +
-            item('<svg width="22" height="10"><path d="M1,9Q11,-3 21,9" fill="none" stroke="' + ink + '" stroke-width="1.6" stroke-dasharray="4 3"/></svg>', "Curved: crosses state lines") +
+            item('<span style="width:14px;height:9px;border-radius:2px;background:repeating-linear-gradient(45deg,' + P.hatch + ' 0 2px,' + P.hatchBg + ' 2px 5px)"></span>', "Outside a declared area") +
+            item('<svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="#c6362f" stroke="' + P.halo + '" stroke-width="1.5"/></svg>', "Network base · color = scheme") +
+            item('<svg width="26" height="10"><line x1="1" y1="5" x2="20" y2="5" stroke="' + ink + '" stroke-opacity="' + op + '" stroke-width="1.4" stroke-dasharray="5 3"/><circle cx="21" cy="5" r="2.8" fill="' + ink + '" fill-opacity="' + op + '"/></svg>', "Damage claimed") +
+            item('<svg width="26" height="10"><line x1="1" y1="5" x2="18" y2="5" stroke="' + ink + '" stroke-opacity="' + op + '" stroke-width="1.4" stroke-dasharray="2 3"/><path d="M21,1L25,5L21,9L17,5Z" fill="' + P.halo + '" stroke="' + ink + '" stroke-width="1.3"/></svg>', "Related location") +
             item('<span style="width:9px;height:9px;border-radius:50%;background:' + P.pin + '"></span>', "Held before payment") +
-            '<span style="display:flex;align-items:center;gap:10px;flex-basis:100%;flex-wrap:wrap">' + F.SCHEME_ORDER.map(function (k) { return '<span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:3px;border-radius:2px;background:' + sc({ scheme: k }) + '"></span>' + esc(F.SCHEMES[k].short) + '</span>'; }).join("") +
-            '<span style="color:var(--mp-mut);margin-left:auto">Hover a line for what it is · scroll to zoom · drag to pan</span></span>';
+            '<span style="color:var(--mp-mut);margin-left:auto">Hover a network to trace it · scroll to zoom</span>';
         }
         function clock() {
-          var t = tOf(st.step), d = el.querySelector("#mp-date"), w = el.querySelector("#mp-when");
+          var t = tOf(st.step), d = document.getElementById("mp-date"), w = document.getElementById("mp-when");
           if (range && +range.value !== (st.step == null ? TL().steps : st.step)) range.value = st.step == null ? TL().steps : st.step;
           if (!d || !w) return;
           if (!st.dr) {
@@ -432,8 +469,8 @@
         function boundsOf(feats) { var b = [[Infinity, Infinity], [-Infinity, -Infinity]]; feats.forEach(function (f) { var x = path.bounds(f); b[0][0] = Math.min(b[0][0], x[0][0]); b[0][1] = Math.min(b[0][1], x[0][1]); b[1][0] = Math.max(b[1][0], x[1][0]); b[1][1] = Math.max(b[1][1], x[1][1]); }); return b; }
         function fly(b, pad, instant) {
           var dx = b[1][0] - b[0][0], dy = b[1][1] - b[0][1], cx = (b[0][0] + b[1][0]) / 2, cy = (b[0][1] + b[1][1]) / 2;
-          var s = Math.max(1, Math.min(60, (1 - pad) / Math.max(dx / W, dy / (H - 90))));
-          var to = d3.zoomIdentity.translate(W / 2 - s * cx, (H - 50) / 2 - s * cy).scale(s);
+          var s = Math.max(1, Math.min(60, (1 - pad) / Math.max(dx / W, dy / (H - 80))));
+          var to = d3.zoomIdentity.translate(W / 2 - s * cx, (H + 28) / 2 - s * cy).scale(s);
           (instant ? svg : svg.transition().duration(950).ease(d3.easeCubicInOut)).call(zoom.transform, to);
         }
         function toNation(instant) { st.level = "us"; st.state = null; st.county = null; paint(); (instant ? svg : svg.transition().duration(950).ease(d3.easeCubicInOut)).call(zoom.transform, d3.zoomIdentity); }
@@ -466,9 +503,7 @@
           setTimeout(next, st.dr ? 900 : 650);
         }
         function flashAt(dr) {
-          var d = G.DESIGNATED[dr], feats = d.counties.map(function (n) { return byKey[G.ST[d.state] + "|" + n]; }).filter(Boolean);
-          var c = path.centroid(stateByFips[G.ST[d.state]]); if (st.level !== "us" && st.state === G.ST[d.state]) { var b = boundsOf(feats); c = [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2]; }
-          var q = tr.apply(c);
+          var q = tr.apply(DECL[dr].c);
           flashG.append("circle").attr("cx", q[0]).attr("cy", q[1]).attr("r", 8).attr("fill", "none").attr("stroke", P.flash).attr("stroke-width", 3)
             .transition().duration(1400).attr("r", 60).style("opacity", 0).remove();
         }
