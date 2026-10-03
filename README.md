@@ -23,7 +23,7 @@ Script and style links in `index.html` carry a version tag (`?v=...`). Change it
    - the tour (`<id>-tour.js`): `window.UC_PACK.tour = function (helpers) { return { trail, steps } }`, read by `assets/demo.js`.
 2. Add one entry to `assets/programs.js` with `live: true` and the pack's scripts in load order.
 
-`assets/packs/fema/` is the worked example. Healthcare is still the shared base data and screens; `assets/packs/health/pack.js` only sets its tour mode.
+`assets/packs/fema/` is the worked example. Its map view (Insights › Map) draws US county boundaries from `assets/packs/fema/geo/counties-10m.json` (US Census data via the `us-atlas` package, ISC license) with `topojson-client` (ISC), both vendored so the site makes no outside calls. Healthcare is still the shared base data and screens; `assets/packs/health/pack.js` only sets its tour mode.
 
 ## Run
 No build step, no dependencies. Serve statically:

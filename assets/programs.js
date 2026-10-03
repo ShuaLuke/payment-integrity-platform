@@ -15,7 +15,8 @@
     { id: "fema", live: true, agency: "FEMA", icon: "tornado", title: "Disaster Relief", sub: "FEMA Individual Assistance",
       body: "Registrations and IHP awards, scored before they pay. Facilitator rings, fake landlords, shared accounts, stolen identities.",
       scripts: ["assets/packs/fema/fema-data.js", "assets/packs/fema/fema-pack.js", "assets/packs/fema/views/home.js", "assets/packs/fema/views/queue.js",
-        "assets/packs/fema/views/registration.js", "assets/packs/fema/views/intake.js", "assets/packs/fema/views/network.js", "assets/packs/fema/fema-tour.js"] },
+        "assets/packs/fema/views/registration.js", "assets/packs/fema/views/intake.js", "assets/packs/fema/views/network.js",
+        "assets/packs/fema/geo/topojson-client.min.js", "assets/packs/fema/fema-geo.js", "assets/packs/fema/views/map.js", "assets/packs/fema/fema-tour.js"] },
     // planned programs (from the opportunity map, opportunities.html), shown as "Coming soon"
     { id: "ui", agency: "Dept. of Labor", icon: "briefcase", title: "Unemployment Insurance", sub: "State workforce agencies",
       body: "Multistate claimants, stolen identities, shared addresses, emails and bank accounts." },

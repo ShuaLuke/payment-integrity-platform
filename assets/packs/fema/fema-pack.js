@@ -45,15 +45,15 @@
   APP.SUBS = {
     home: [],
     casework: [{ v: "queue", l: "Registrations", role: "analyst" }, { v: "approvals", l: "Approvals", role: "supervisor" }],
-    insights: [{ v: "edi", l: "Intake" }, { v: "network", l: "Networks" }],
+    insights: [{ v: "edi", l: "Intake" }, { v: "network", l: "Networks" }, { v: "map", l: "Map" }],
     library: []
   };
-  APP.VIEW_AREA = { home: "home", queue: "casework", claim: "casework", approvals: "casework", edi: "insights", network: "insights" };
+  APP.VIEW_AREA = { home: "home", queue: "casework", claim: "casework", approvals: "casework", edi: "insights", network: "insights", map: "insights" };
   var baseLabel = APP.labelForSnap;
   APP.labelForSnap = function (s) {
     if (!s) return "Registrations";
     if (s.view === "claim") return "Registration " + s.allegationId;
-    var map = { queue: "Registrations", home: "Home", approvals: "Approvals", edi: "Intake", network: "Networks" };
+    var map = { queue: "Registrations", home: "Home", approvals: "Approvals", edi: "Intake", network: "Networks", map: "Map" };
     return map[s.view] || baseLabel(s);
   };
   APP.backLabel = function () { return APP.state.hist && APP.state.hist.length ? APP.labelForSnap(APP.state.hist[APP.state.hist.length - 1]) : "Registrations"; };
