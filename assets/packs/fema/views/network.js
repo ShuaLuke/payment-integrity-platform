@@ -126,7 +126,7 @@
       '<div style="flex:1;min-width:240px;border:0.5px dashed var(--border);border-radius:8px;padding:9px 11px;color:var(--text2)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3)"><i class="ti ti-list-details"></i> One registration at a time</div>' +
       '<div style="font-size:12px;line-height:1.5;margin-top:3px">Finding ' + big(total) + ' one registration at a time means verifying <b>' + S.regs.toLocaleString() + ' registrations</b> by hand, about <b>' + hours.toLocaleString() + ' analyst hours</b>, and still missing the storefronts, accounts and lease templates that tie them together across disasters.</div></div>' +
       '<div style="flex:1;min-width:240px;background:var(--accent-l);border:0.5px solid var(--accent);border-radius:8px;padding:9px 11px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent-d)"><i class="ti ti-affiliate"></i> Network first</div>' +
-      '<div style="font-size:12px;line-height:1.5;margin-top:3px;color:var(--ink)">One flag opens the network. Analysts work <b>' + S.networks + ' cases</b>, each with its evidence already assembled, and genuine survivors keep getting paid the same day.</div></div></div>' +
+      '<div style="font-size:12px;line-height:1.5;margin-top:3px;color:var(--ink)">One flag opens the network. Analysts work <b>' + S.networks + ' cases</b>, each with its evidence already assembled, and verified survivors aren’t slowed down.</div></div></div>' +
       '<div style="font-size:10.5px;color:var(--text3);margin-top:8px"><i class="ti ti-info-circle"></i> For scale: GAO estimated $600M–$1.4B in improper and potentially fraudulent IHP payments after Hurricanes Katrina and Rita (GAO-06-844T). Demo figures are synthetic.</div></div>';
   }
 
@@ -206,7 +206,7 @@
   // ---------- one network, down to the registration ----------
   function coreModel() {
     return {
-      core: true, hub: { name: F.OPERATOR.name, sub: "One operator · 4 storefronts · fees to one account " + F.OPERATOR.feeAcct },
+      core: true, hub: { name: F.OPERATOR.name, sub: "One operator · 4 storefronts · 6 shared accounts" },
       captions: { mid: "“APPLICATION HELP” STOREFRONTS · LA · MS", reg: "REGISTRATIONS · 1 FLAGGED + 17 SIMILAR · SAME LEASE TEMPLATE, DIFFERENT REGISTRANTS", bot: "COLLECTION ACCOUNTS · 6" },
       mids: F.STOREFRONTS.map(function (s) { return { id: s.id, name: s.name, line2: s.city + ", " + s.state + " · " + s.phone, tag: "separate phone & page", risk: s.risk, regs: s.regs, dr: s.dr }; }),
       regs: F.GRAPH.map(function (g) { return { id: g.id, mid: g.store, bot: g.acct, amount: g.amount, seed: g.seed, name: g.name, addr: g.addr, state: g.state, landlord: F.LANDLORDS[g.landlord].name }; }),
@@ -231,8 +231,8 @@
   function boxesHtml(n, m) {
     if (m.core) {
       return '<div style="flex:1;background:var(--high-bg);border:0.5px solid #f3c9c9;border-radius:8px;padding:10px 12px"><div style="font-weight:600;font-size:12.5px;color:var(--high-tx);margin-bottom:5px"><i class="ti ti-alert-triangle"></i> One operation, four fronts</div>' +
-        '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px"><span class="tag">4 storefronts · separate phones & pages</span><span class="tag">1 lease template · 214 registrations</span><span class="tag">6 collection accounts span the storefronts</span><span class="tag">fees to ' + F.OPERATOR.feeAcct + '</span><span class="tag">DR-9921-LA + DR-9922-MS</span></div>' +
-        '<div style="font-size:11.5px;color:#5c1a14;line-height:1.5">On paper, four unrelated “FEMA application help” pages. In the data, every collection account receives awards filed by more than one storefront, the leases share one template, and about half of each award moves to one fee account within 48 hours. <b>' + n.regs + ' registrations · ' + big(n.atRisk) + '</b> in the pattern.</div></div>';
+        '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px"><span class="tag">4 storefronts · separate phones & pages</span><span class="tag">1 lease template · 214 registrations</span><span class="tag">6 collection accounts span the storefronts</span><span class="tag">DR-9921-LA + DR-9922-MS</span></div>' +
+        '<div style="font-size:11.5px;color:#5c1a14;line-height:1.5">On paper, four unrelated “FEMA application help” pages. In the data, every collection account receives awards filed by more than one storefront, and the leases share one template. <b>' + n.regs + ' registrations · ' + big(n.atRisk) + '</b> in the pattern.</div></div>';
     }
     return '<div style="flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px"><div style="font-weight:600;font-size:12.5px;margin-bottom:6px"><i class="ti ti-affiliate"></i> ' + esc(n.name) + '</div>' +
       '<div style="display:flex;gap:5px;flex-wrap:wrap"><span class="tag">' + esc(F.SCHEMES[n.scheme].label) + '</span><span class="tag">' + n.drs.join(" · ") + '</span><span class="tag">' + n.states.join(" · ") + '</span></div>' +
@@ -327,7 +327,7 @@
       g.on("mouseover", function (e) {
         focus(function (r) { return r.bot === b.id; });
         var rs = regs.filter(function (r) { return r.bot === b.id; });
-        showTip(e, "<div style='color:#d4bbff;margin-bottom:2px'>" + (m.core ? "Collection account" : "Registrant") + "</div><b>" + esc(b.name) + "</b> <span style='color:#c1c7cd'>" + esc(b.sub || "") + "</span><div style='color:#c1c7cd'>" + (m.core ? "Receives " + rs.length + " awards for " + rs.length + " different registrants: " + rs.map(function (r) { return esc(r.name.split(" ")[0] + " " + r.name.split(" ").slice(-1)); }).join(", ") + "<br>Forwards about half of each to " + F.OPERATOR.feeAcct : rs.length + " registrations") + "</div>");
+        showTip(e, "<div style='color:#d4bbff;margin-bottom:2px'>" + (m.core ? "Collection account" : "Registrant") + "</div><b>" + esc(b.name) + "</b> <span style='color:#c1c7cd'>" + esc(b.sub || "") + "</span><div style='color:#c1c7cd'>" + (m.core ? "Receives " + rs.length + " awards for " + rs.length + " different registrants: " + rs.map(function (r) { return esc(r.name.split(" ")[0] + " " + r.name.split(" ").slice(-1)); }).join(", ") + "<br>One account, " + rs.length + " different names" : rs.length + " registrations") + "</div>");
       }).on("mouseout", reset);
     });
   }

@@ -36,7 +36,7 @@
     { k: "occ", t: "Verify occupancy", s: "residence & ownership" },
     { k: "insp", t: "Inspect", s: "damage assessed" },
     { k: "score", t: "Score", s: "rules + ML/AI" },
-    { k: "pay", t: "Pay", s: "paid same day" },
+    { k: "pay", t: "Pay", s: "no added wait" },
     { k: "hold", t: "Hold or recover", s: "not released" }
   ];
   var FIRST = ["James", "Maria", "Tyrone", "Linda", "Michael", "Keisha", "David", "Brenda", "William", "Yolanda", "Richard", "Susan", "Joseph", "Jessica", "Thomas", "Danielle", "Charles", "Karen", "Andre", "Nancy", "Anthony", "Lisa", "Darnell", "Betty", "Steven", "Sandra", "Kevin", "Donna", "Brian", "Carol"];
@@ -83,7 +83,7 @@
       '<div style="font-weight:500;font-size:12.5px"><i class="ti ti-sitemap" style="color:var(--accent-d)"></i> Pipeline <span class="muted" style="font-weight:400;font-size:10.5px">· last 24 hours · registration to payment</span></div>' +
       '<div style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:6px"><span class="edi-dot"></span> Live · updated <span id="edi-upd">1s ago</span></div></div>' +
       '<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:2px">' + boxes + '</div>' +
-      '<div style="font-size:10.5px;color:var(--text3);margin-top:8px"><i class="ti ti-refresh"></i> Verified registrations pay the same day. Only the ones that fail a check are held, and analyst decisions feed back into the models.</div></div>';
+      '<div style="font-size:10.5px;color:var(--text3);margin-top:8px"><i class="ti ti-refresh"></i> Verified registrations go straight to payment. Only the ones that fail a check are held, and analyst decisions feed back into the models.</div></div>';
   }
 
   var liveRun = 0;
@@ -114,7 +114,7 @@
       d("occ", "assessor · USPS · utilities");
       d("insp", "remote and on-site");
       d("score", '<span style="color:#ffd27a;font-weight:600">' + P.flagged + ' flagged</span> · median 1.6s to score');
-      d("pay", money(P.paid) + " · " + Math.round(F.INTAKE.sameDay * 100) + "% same day");
+      d("pay", money(P.paid) + " · " + Math.round(F.INTAKE.sameDay * 100) + "% straight through");
       d("hold", '<span style="color:#ffb4a8">' + money(P.held) + '</span> held pending verification');
       var u = q("#edi-upd"); if (u) u.textContent = ago(S.updated);
     }
@@ -142,7 +142,7 @@
       P.idv++; P.occ++;
       if (r < 0.12) return { src: ch.toUpperCase(), cls: "", txt: txt, out: "scored " + (30 + Math.floor(Math.random() * 30)) + " · inspection scheduled" };
       P.pay++; P.paid += amt;
-      return { src: ch.toUpperCase(), cls: "ok", txt: txt, out: "scored " + (3 + Math.floor(Math.random() * 25)) + " · verified · paid today" };
+      return { src: ch.toUpperCase(), cls: "ok", txt: txt, out: "scored " + (3 + Math.floor(Math.random() * 25)) + " · verified · to payment" };
     }
     function otherEvent() {
       var r = Math.random();
@@ -188,7 +188,7 @@
         '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
         kpi("Registrations", num(I.registrations), "since " + D.declared) +
         kpi("IHP approved", "$" + (I.approved / 1e6).toFixed(1) + "M", "to date") +
-        kpi("Paid the same day", Math.round(I.sameDay * 100) + "%", "verified registrations") +
+        kpi("Straight to payment", Math.round(I.sameDay * 100) + "%", "passed every check") +
         kpi("Held for verification", num(I.held), "failed a check · not paid yet") +
         kpi("Inspections", num(I.inspections), "remote and on-site") +
         '</div>' +

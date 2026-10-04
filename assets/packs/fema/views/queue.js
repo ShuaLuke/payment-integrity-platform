@@ -46,7 +46,7 @@
       kpi("Awaiting a decision", S.pending + " / " + S.total, "flagged or sampled for review") +
       kpi("Amount at risk", usd(S.atRisk), "recommended Hold or Deny") +
       kpi("Payments held or prevented", '<span id="fpp-held" style="color:var(--low-tx)">' + usd(S.held) + '</span>', "not released pending verification") +
-      kpi("Paid today · fast lane", '1,842 <span style="font-size:13px;color:var(--text2);font-weight:500">· $14.1M</span>', Math.round(I.sameDay * 100) + "% of awards pay the same day") +
+      kpi("Paid today · fast lane", '1,842 <span style="font-size:13px;color:var(--text2);font-weight:500">· $14.1M</span>', Math.round(I.sameDay * 100) + "% pass every check · no added wait") +
       '</div>' +
       '<div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Risk</th><th>Registration</th><th>Registrant · damaged dwelling</th><th class="right">Award</th><th>Model recommends</th><th style="width:206px">Decision</th></tr></thead><tbody id="fpp-body"></tbody></table></div>' +
       '<div style="margin-top:10px;font-size:12px;color:var(--text2)"><i class="ti ti-shield-check" style="color:var(--accent-d)"></i> Holding here keeps the money in place until occupancy or identity is verified; nothing is taken away from a genuine survivor. Verified registrations flow straight through.</div>' +

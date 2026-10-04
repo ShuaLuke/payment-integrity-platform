@@ -141,7 +141,7 @@
       signals: [
         { sev: "high", label: "Same lease template as 214 registrations", detail: "Identical layout and clauses to R-104417's lease, including the “premisis” misspelling. Same landlord signature.", src: "Document fingerprint" },
         { sev: "high", label: "Landlord doesn't own the property", detail: "77 Magnolia Ridge Ln belongs to an out-of-state owner who reports the home vacant and unrented since 2024.", src: "Parish assessor · Owner contact" },
-        { sev: "high", label: "Half the award moved out within 48 hours", detail: "$8,470 transferred from ••5106 to account ••0429 two days after payment. ••0429 receives transfers from 37 award accounts.", src: "Bank transaction review (post-payment)" },
+        { sev: "high", label: "Deposit account shared across names", detail: "Account ••5106 also received R-104015 (Monica S. Bourgeois) and M-201203 in Mississippi (Travis W. Cuevas): three registrants, one account.", src: "Bank account verification" },
         { sev: "med", label: "Same device as R-104417", detail: "Filed from device D-7F3A with callback phone (985) 555-0147.", src: "Session & device telemetry" }
       ] },
     { id: "R-104102", mode: "retrospective", dr: "DR-9921-LA", registrant: "Jarrod R. Fontenot", addr: "2210 Grand Caillou Rd, Apt B, Houma, LA 70363", parish: "Terrebonne", occupancy: "Renter",
@@ -208,7 +208,7 @@
   };
   var SCHEME_ORDER = ["facilitator", "leasemill", "account", "identity", "address"];
   // atRisk: paid + pending awards matching the network's pattern across the
-  // 36-month lookback. spokes: the second ring of the graph.
+  // 13-month lookback (every declaration so far). spokes: the second ring of the graph.
   var NETS = [
     { id: "N01", core: true, scheme: "facilitator", name: "Crescent Relief network", drs: ["DR-9921-LA", "DR-9922-MS"], states: ["LA", "MS"], atRisk: 8640000, regs: 597, status: "Under review", risk: 94,
       spokes: STOREFRONTS.map(function (s) { return s.name; }) },
@@ -245,7 +245,7 @@
     { a: "N02", b: "N13", type: "Same device", detail: "Device D-22B0 filed for Red Stick Recovery Helpers and for the prison-roster identities." }
   ];
   var AVG = { facilitator: 14700, leasemill: 12900, account: 13400, identity: 9800, address: 11200 };
-  var PLAN = { lookbackMonths: 36, declarations: Object.keys(DECLS).length, minutesPerReg: 60 };
+  var PLAN = { lookbackMonths: 13, declarations: Object.keys(DECLS).length, minutesPerReg: 60 };
   NETS.forEach(function (n) {
     n.regs = n.regs || Math.round(n.atRisk / AVG[n.scheme]);
     n.crossState = n.states.length > 1;
@@ -263,7 +263,8 @@
     LEADS: LEADS, SCHEMES: SCHEMES, SCHEME_ORDER: SCHEME_ORDER, NETS: NETS, BRIDGES: BRIDGES, PLAN: PLAN,
     SEED: "R-104417", THREAD: "R-103882", DECISION: "R-104102", SEED_AMOUNT: 17280,
     // Delphine (LA) intake to date
-    INTAKE: { registrations: 61480, approved: 412600000, sameDay: 0.91, inspections: 18240, held: 2318 },
+    INTAKE: { // sameDay: share that pass every check and go straight to payment
+      registrations: 61480, approved: 412600000, sameDay: 0.91, inspections: 18240, held: 2318 },
     lead: function (id) { return LEADS.filter(function (l) { return l.id === id; })[0] || null; },
     store: function (id) { return STOREFRONTS.filter(function (s) { return s.id === id; })[0] || null; },
     net: function (id) { return NETS.filter(function (n) { return n.id === id; })[0] || null; },
