@@ -127,6 +127,10 @@
     if (a.recommendedAction === "pay") return "Deliverable, price and procurement check out against independent sources. Reimburse now: the fast lane keeps well-run subrecipients from waiting on controls aimed at fraud.";
     if (a.recommendedAction === "dismiss") return "The match is the standard federal after-action template, which jurisdictions are supposed to use. The findings and improvement plan are Wexley County's own. Clear it; the decision feeds back so the model learns federal templates.";
     if (a.recommendedAction === "deny") return "The request fails a hard eligibility check. Deny with the coded reason; the subrecipient can appeal through the state.";
+    if (a.fwaType === "Payroll overcharge") return a.mode === "prepay" ? "One person's time is charged to more than 100% across two grants. Hold and ask for timesheets; if they don't support the split, disallow the excess." : "Two salaries were charged in full to two grants for the same period. Disallow the duplicate share and recover it through the state.";
+    if (a.fwaType === "Shell bidders") return "The winning bidder beat two vendors it shares a registered agent and phone with, so the competition wasn't real. Hold and ask the state for the procurement file and price analysis.";
+    if (a.fwaType === "Undisclosed conflict") return "The official who approved these invoices has an undisclosed tie to the subcontractor. Disallow the cost and refer the conflict to DHS OIG; place it on the Tidewater case.";
+    if (a.fwaType === "Copy-paste deliverable") return "The deliverable duplicates work another county already paid for, from a related vendor. Disallow the cost and place it on the Tidewater case.";
     return "The evidence points to an unsupported cost but should be verified before a final decision.";
   }
   AI.adjudicationSummary = function (a) {
@@ -173,12 +177,28 @@
       { role: "Policy", focus: "2 CFR 200 · grant terms · recovery", icon: "scale", findings: [{ sev: "low", text: recRationale(a) }], sources: ["2 CFR Part 200", "Preparedness Grants Manual"] }
     ];
   };
+  // peer comparison by what was bought
+  function peerText(a) {
+    if (a.deliverable === P.SAME_PLAN.name) return "Compared with 212 county communications plans paid for in FY2022–25: the median is " + usd(P.PEER_MEDIAN) + " and 90% cost under $48,000. " + a.id + " is " + usd(a.amount) + ". Every plan above $80,000 came from one of the three related vendors in the Tidewater network.";
+    if (/radio/i.test(a.deliverable)) return "Compared with 640 portable-radio purchases: the median price is $4,180 a radio. " + a.id + " works out to $4,430 a radio, close to the market. The problem isn't the price: 31 of the serial numbers were already billed to another county.";
+    if (a.budgetLine === "Personnel") return "Compared with peer emergency management offices: staff are charged 100% or less across all grants in 97% of quarters. Here one person is charged " + (a.sub === "C7" ? "160%" : "200%") + " of their time across two grants for the same period.";
+    if (/exercise/i.test(a.deliverable)) return "Compared with 188 county tabletop exercises: the median is $30,900. " + a.id + " is " + usd(a.amount) + ", 2.1× the median, and the two losing bids came from vendors related to the winner.";
+    if (/continuity/i.test(a.deliverable)) return "Compared with 164 county continuity plans: the median is $31,200. " + a.id + " is " + usd(a.amount) + ", and its text matches a plan sold to another county by a related vendor.";
+    if (/plan maintenance|exercise support/i.test(a.deliverable)) return "Plan maintenance and exercise support subcontracts in peer counties run a median of $14,500 a year. This one is " + usd(a.amount) + ", paid to a company registered at the home of the official who approved it.";
+    if (a.recommendedAction === "pay" || a.recommendedAction === "dismiss") return a.id + " is in line with peers: " + a.reason.toLowerCase() + ".";
+    return a.id + " is " + usd(a.amount) + ". " + a.reason + ".";
+  }
   AI.copilot = function (a, q) {
     if (!a || a.uc !== "prep") return baseCopilot(a, q);
     q = (q || "").toLowerCase();
-    if (/peer|compare|typical|normal|price/.test(q)) return "Compared with 212 county communications plans paid for in FY2022–25: the median is $25,400 and 90% cost under $48,000. " + a.id + " is " + usd(a.amount) + ". Every plan above $80,000 came from one of the three related vendors in the Tidewater network.";
+    var v = a.vendorRec, n = a.network ? P.net(a.network) : null;
+    if (/peer|compare|typical|normal|price|median|cost/.test(q)) return peerText(a);
     if (/rationale|justif|draft/.test(q)) return "Draft rationale: Request " + a.id + " (" + a.subrecipient.name + ", " + a.state + ") seeks reimbursement of " + usd(a.amount) + " for " + a.deliverable + ". " + (a.signals || []).filter(function (s) { return s.sev === "high"; }).map(function (s) { return s.detail; }).join(" ") + " On this evidence the cost is " + (a.recommendedAction === "pay" || a.recommendedAction === "dismiss" ? "supported." : "not supported as submitted.");
-    if (/recommend|action|should/.test(q)) return "Recommended: " + (REC_LABEL[a.recommendedAction] || a.recommendedAction) + ". " + recRationale(a);
+    if (/recommend|action|should|decide|next/.test(q)) return "Recommended: " + (REC_LABEL[a.recommendedAction] || a.recommendedAction) + ". " + recRationale(a);
+    if (/own|who|vendor|bidder|agent|officer|compan/.test(q)) return v ? v.name + " (" + v.city + ", " + v.state + ", formed " + v.formed + ", UEI " + v.uei + "). " + (a.network === "N01" ? "It is one of five vendors that share registered agent Atlantic Registered Agents; R. A. Kessling is an officer of two of them, phone " + P.OPERATOR.phone + " is listed by two, and deposit account " + P.OPERATOR.acct + " receives payments for two." : "") : "This cost is paid to " + a.payee + ", not an outside vendor.";
+    if (/network|link|related|connect|other/.test(q)) return n ? n.name + ": " + P.SCHEMES[n.scheme].label.toLowerCase() + ", " + n.subs + " subrecipients in " + n.states.join(", ") + ", " + P.bigUsd(n.atRisk) + " at risk across " + n.programs.join(", ") + ". Open Insights › Networks to see it down to the invoice." : "No links found: this request shares no agent, officer, phone, account or deliverable with other vendors.";
+    if (/recover|refer|oig|letter|notice/.test(q)) return a.mode === "prepay" ? "Nothing to recover yet: the request hasn't been paid. Hold it and send the state agency a request for procurement documentation (Correspondence tab)." : "Recovery runs through the state agency as pass-through entity (2 CFR 200.346): disallow the cost, then send the Notice of recovery from the Correspondence tab." + (a.network ? " Because it's part of a network, an OIG referral memo is drafted there too." : "");
+    if (/rule|policy|cfr|law|regulation|allow/.test(q)) return "The rules that apply here: competition (2 CFR 200.319), conflicts of interest (200.318(c)), equipment records (200.313), reasonable and allowable costs (200.403–404), personnel time (200.430) and excluded parties (2 CFR 180). The Policy agent lists which ones this request touches.";
     return a.id + " · " + a.subrecipient.name + " · " + usd(a.amount) + " · risk " + a.riskScore + ". " + a.reason + ". " + recRationale(a);
   };
   AI.CORRESPONDENCE_TYPES = [

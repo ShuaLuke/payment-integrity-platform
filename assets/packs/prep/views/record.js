@@ -69,7 +69,7 @@
     var out = [tile("Subrecipient", "building-community", esc(s.name) + ", " + a.state, [esc(s.kind) + ' · through ' + esc(st.saa), s.coordinator ? "Grant coordinator " + esc(s.coordinator) : "Submitted " + esc(a.submitted || "")])];
     out.push(tile("Award", "certificate", P.PROGRAMS[a.award.program].short + " · " + a.award.fy, ['<span class="mono">' + a.award.no + '</span>', "Budget line: " + esc(a.budgetLine)]));
     out.push(tile("Paid to", "building-store", esc(a.payee), v ? [esc(v.city) + ", " + v.state + ' · <span class="mono">' + v.phone + '</span>', 'UEI <span class="mono">' + v.uei + '</span> · formed ' + v.formed] : ["Established payee"], hot));
-    out.push(tile(a.mode === "prepay" ? "Reimbursement to" : "Reimbursed to", "building-bank", esc(s.name), [a.mode === "prepay" ? "Not released" : "Paid " + (a.paidDate || ""), v && (v.id === "V3" || v.id === "V4") ? 'Vendor paid into <span class="mono">' + P.OPERATOR.acct + '</span>' : "Vendor paid by county check"]));
+    out.push(tile(a.mode === "prepay" ? "Reimbursement to" : "Reimbursed to", "building-bank", esc(s.name), [a.mode === "prepay" ? "Not released" : "Paid " + (a.paidDate || ""), v && (v.id === "V3" || v.id === "V4") ? 'Vendor paid into <span class="mono">' + P.OPERATOR.acct + '</span>' : /payroll|in-house/i.test(a.payee || "") ? "Payroll and staff costs" : "Vendor paid by county check"]));
     return out.join("");
   }
 
@@ -136,11 +136,11 @@
   }
 
   function checks(a) {
-    var ring = a.network === "N01", t = a.fwaType;
+    var ring = a.network === "N01", t = a.fwaType, inHouse = /payroll|in-house/i.test(a.payee || "");
     var V = [
-      ["Vendor registration", "id-badge-2", t === "Excluded vendor" ? ["fail", "Active SAM.gov exclusion (debarred 2025-06)"] : ["pass", a.vendorRec ? "Active in SAM.gov since " + a.vendorRec.formed.slice(0, 4) : "Active, no exclusions"], "SAM.gov · Do Not Pay"],
-      ["Vendor age & ownership", "building", ring ? ["warn", "Formed " + a.vendorRec.formed + "; shares a registered agent with 2 other vendors"] : ["pass", "Established business, no shared officers"], "State business registries"],
-      ["Competition", "users-group", a.vendor === "V4" ? ["fail", "No competition; the cooperative contract cited doesn't list this seller"] : a.vendor === "V5" ? ["warn", "Subcontract, selected by the official it's tied to"] : ring ? ["fail", "All three quotes came from related vendors"] : ["pass", "Independent bidders"], "Procurement file · entity resolution"],
+      ["Vendor registration", "id-badge-2", t === "Excluded vendor" ? ["fail", "Active SAM.gov exclusion (debarred 2025-06)"] : inHouse ? ["pass", "Not a vendor payment"] : ["pass", a.vendorRec ? "Active in SAM.gov since " + a.vendorRec.formed.slice(0, 4) : "Active, no exclusions"], "SAM.gov · Do Not Pay"],
+      ["Vendor age & ownership", "building", inHouse ? ["pass", "Not a vendor payment"] : a.vendor === "V5" ? ["fail", "Formed " + a.vendorRec.formed + "; registered at the grant coordinator's home"] : a.vendor === "V4" ? ["warn", "Shares a deposit account with a related bidder"] : ring ? ["warn", "Formed " + a.vendorRec.formed + "; shares a registered agent with 2 other vendors"] : ["pass", "Established business, no shared officers"], "State business registries"],
+      ["Competition", "users-group", inHouse ? ["pass", "No procurement: an in-house or personnel cost"] : a.vendor === "V4" ? ["fail", "No competition; the cooperative contract cited doesn't list this seller"] : a.vendor === "V5" ? ["warn", "Subcontract, selected by the official it's tied to"] : ring ? ["fail", "All three quotes came from related vendors"] : ["pass", "Independent bidders"], "Procurement file · entity resolution"],
       ["Price", "receipt-2", a.id === P.SEED || a.id === P.THREAD ? ["fail", "3.4× the $25,400 peer median"] : ring ? ["warn", "Above the peer range"] : ["pass", "Within the peer range"], "Peer pricing · subaward ledgers"],
       ["Deliverable originality", "file-search", t === "Copy-paste deliverable" ? ["fail", "Text matches deliverables sold to other jurisdictions"] : t === "Shared template" ? ["pass", "Match is the federal HSEEP template"] : ["pass", "No matches outside federal templates"], "Document fingerprint"],
       ["Equipment received", "device-mobile", t === "Double-billed equipment" ? ["fail", "31 of 48 serial numbers already on another county's inventory"] : a.budgetLine === "Equipment" ? ["pass", "Serial numbers on the inventory, delivery signed"] : ["pass", "Not an equipment purchase"], "Equipment inventories"],
@@ -182,7 +182,9 @@
   function documents(a) {
     if (a.id === P.DECISION) return serials(a);
     if (!PLAN_ID[a.id]) {
+      var note = a.fwaType === "Copy-paste deliverable" ? (a.signals[0] || {}).detail : a.fwaType === "Shared template" ? "The matching text is the federal HSEEP after-action template; the findings and improvement plan are Wexley County's own." : "";
       return '<div class="card" style="margin:0"><div style="font-weight:500;font-size:13px;margin-bottom:6px"><i class="ti ti-files" style="color:var(--accent-d)"></i> Documents on file</div>' +
+        (note ? '<div style="font-size:12px;line-height:1.5;padding:8px 10px;margin-bottom:6px;border-radius:7px;background:' + (a.fwaType === "Shared template" ? "var(--low-bg)" : "var(--high-bg)") + '"><i class="ti ti-file-search"></i> ' + esc(note) + '</div>' : '') +
         ["Reimbursement request", "Vendor invoice", a.budgetLine === "Equipment" ? "Receiving report and inventory record" : a.budgetLine === "Personnel" ? "Timesheets" : "Deliverable as accepted", "Procurement file"].map(function (d) { return '<div style="display:flex;gap:8px;padding:6px 0;border-top:0.5px solid var(--border2);font-size:12px"><i class="ti ti-file-text" style="color:var(--text3)"></i>' + d + '</div>'; }).join("") + '</div>';
     }
     var other = a.id === P.SEED ? P.THREAD : P.SEED;
@@ -216,11 +218,11 @@
         : "Three independent quotes; the lowest responsive bidder was selected. No shared agents, officers, phones or accounts among the bidders.";
       return '<div class="card" style="margin:0"><div style="font-weight:500;font-size:13px;margin-bottom:6px"><i class="ti ti-users-group" style="color:var(--accent-d)"></i> Procurement</div><div style="font-size:12px;color:var(--text2);line-height:1.5">' + txt + '</div></div>';
     }
-    var bids = [
-      { v: P.vendor("V1"), amt: a.id === P.SEED ? 86400 : 84900, win: a.vendor === "V1" },
-      { v: P.vendor("V2"), amt: 92150, win: a.vendor === "V2" },
-      { v: P.vendor("V3"), amt: 95800, win: a.vendor === "V3" }
-    ];
+    var up = [1.067, 1.109], k = 0;
+    var bids = ["V1", "V2", "V3"].map(function (id) {
+      var win = a.vendor === id;
+      return { v: P.vendor(id), amt: win ? a.amount : Math.round(a.amount * up[k++] / 50) * 50, win: win };
+    });
     var share = function (t) { return '<span class="tag" style="font-size:10px;background:var(--high-bg);color:var(--high-tx)">' + t + '</span>'; };
     return '<div class="card" style="margin:0">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:10px"><div style="font-weight:500;font-size:13px"><i class="ti ti-users-group" style="color:var(--accent-d)"></i> The three quotes <span class="muted" style="font-weight:400;font-size:11px">· entity resolution across state registries, SAM.gov and payment accounts</span></div>' +

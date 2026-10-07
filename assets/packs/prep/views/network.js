@@ -219,8 +219,10 @@
     var r = (function (seed) { var x = seed; return function () { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; }; })(n.id.charCodeAt(1) * 977 + n.id.charCodeAt(2) * 31);
     var mids = n.spokes.map(function (s, i) { return { id: "M" + i, name: s, line2: n.states[i % n.states.length] + " · " + n.programs[i % n.programs.length], tag: F.SCHEMES[n.scheme].spoke.toLowerCase().replace(/s$/, ""), risk: Math.max(60, n.risk - Math.floor(r() * 15)) }; });
     var bots = [], regs = [], nb = Math.min(6, 3 + mids.length);
-    for (var b = 0; b < nb; b++) bots.push({ id: "B" + b, name: "Sub " + (b + 1), full: "Subrecipient " + (b + 1), sub: n.states[b % n.states.length] });
-    for (var i = 0; i < 12; i++) regs.push({ id: n.id + "-" + (100 + i), mid: mids[i % mids.length].id, bot: bots[Math.floor(r() * nb)].id, amount: Math.round((n.invoices ? n.atRisk / n.invoices : 60000) * (0.7 + r() * 0.6) / 10) * 10, seed: false, name: "", state: "paid" });
+    var NAMES = ["Ashby", "Corwin", "Dunmore", "Ellery", "Fenwick", "Galloway", "Harlow", "Kessel", "Linden", "Mabry", "Norland", "Oakes", "Pellam", "Quarry", "Rendell", "Stanmore", "Tolland", "Varney"];
+    var off = Math.floor(r() * NAMES.length);
+    for (var b = 0; b < nb; b++) { var nm = NAMES[(off + b * 5) % NAMES.length]; bots.push({ id: "B" + b, name: nm, full: nm + " County", sub: n.states[b % n.states.length] }); }
+    for (var i = 0; i < 12; i++) regs.push({ id: n.id + "-" + (100 + i), mid: mids[i % mids.length].id, bot: bots[i < nb ? i : Math.floor(r() * nb)].id, amount: Math.round((n.invoices ? n.atRisk / n.invoices : 60000) * (0.7 + r() * 0.6) / 10) * 10, seed: false, name: "", state: "paid" });
     return { core: false, hub: { name: n.name, sub: F.SCHEMES[n.scheme].label + " · " + n.programs.join(" · ") }, captions: { mid: F.SCHEMES[n.scheme].spoke.toUpperCase() + " · " + n.states.join(" · "), reg: "INVOICES · SAMPLE OF " + n.invoices.toLocaleString(), bot: "SUBRECIPIENTS" }, mids: mids, regs: regs, bots: bots };
   }
   function legendHtml(m) {
