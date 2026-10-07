@@ -17,6 +17,10 @@
       scripts: ["assets/packs/fema/fema-data.js", "assets/packs/fema/fema-pack.js", "assets/packs/fema/views/home.js", "assets/packs/fema/views/queue.js",
         "assets/packs/fema/views/registration.js", "assets/packs/fema/views/intake.js", "assets/packs/fema/views/network.js",
         "assets/packs/fema/geo/topojson-client.min.js", "assets/packs/fema/fema-geo.js", "assets/packs/fema/views/map.js", "assets/packs/fema/fema-tour.js"] },
+    { id: "prep", live: true, agency: "FEMA", icon: "building-community", title: "Preparedness Grants", sub: "Grants to states and localities",
+      body: "Money followed below the state to the vendors. Copied deliverables, related bidders, equipment billed twice, undisclosed conflicts.",
+      scripts: ["assets/packs/prep/prep-data.js", "assets/packs/prep/prep-pack.js", "assets/packs/prep/views/home.js", "assets/packs/prep/views/queue.js",
+        "assets/packs/prep/views/record.js", "assets/packs/prep/views/flow.js", "assets/packs/prep/views/network.js", "assets/packs/prep/prep-tour.js"] },
     // planned programs (from the opportunity map, opportunities.html), shown as "Coming soon"
     { id: "ui", agency: "Dept. of Labor", icon: "briefcase", title: "Unemployment Insurance", sub: "State workforce agencies",
       body: "Multistate claimants, stolen identities, shared addresses, emails and bank accounts." },
