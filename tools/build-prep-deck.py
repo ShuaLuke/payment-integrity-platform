@@ -100,7 +100,7 @@ runs("slide11", {1: "Below the state: ", 2: "14 of 22", 3: " subgrantees broke e
   22: "One state sees one county's purchase; ", 23: "a cross-state view sees the vendor",
   24: "Sources: DHS OIG-12-16, OIG-17-15; DOJ, N.D. Ill. (Aug 2014; charges, not a conviction); DOJ, E.D. Cal. (Oct 2022); DOJ (Oct 2007); GAO-25-107315"})
 runs("slide12", {0: "APPENDIX  ·  FOR OUR TEAM", 1: "What preparedness grants ", 2: "actually fund", 3: ", and why it matters for the story",
-  4: "Seawalls are mitigation grants. Preparedness buys plans, equipment, training and staff.",
+  4: "Preparedness buys plans, equipment, training and staff.",
   5: "PROGRAM  ·  WHO GETS IT", 6: "WHAT IT BUYS",
   7: "State Homeland Security Program and Urban Area Security Initiative: states, which pass most of it to locals, and high-risk metro areas",
   8: "Plans, equipment, training, exercises; fusion centers",
