@@ -13,9 +13,9 @@
   // payment types, each certified by an agency
   var PROGRAMS = {
     REF: { code: "REF", agency: "IRS", name: "Individual income tax refund", short: "Tax refund" },
-    SSA: { code: "SSA", agency: "SSA", name: "Social Security benefit", short: "SSA benefit" },
+    SSA: { code: "SSA", agency: "SSA", name: "Social Security benefit", short: "Benefit" },
     OPM: { code: "OPM", agency: "OPM", name: "Federal retirement annuity", short: "Annuity" },
-    VAB: { code: "VAB", agency: "VA", name: "VA compensation", short: "VA benefit" },
+    VAB: { code: "VAB", agency: "VA", name: "VA compensation", short: "Benefit" },
     VEN: { code: "VEN", agency: "GSA", name: "Federal vendor payment", short: "Vendor" }
   };
   var AGENCIES = {
