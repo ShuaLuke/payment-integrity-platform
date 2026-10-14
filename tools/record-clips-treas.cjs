@@ -149,7 +149,7 @@ const CLIPS = {
     await sleep(400);
     await rec(page, async () => {
       await sleep(600);
-      await moveToEl(page, ".r-pkg", 1000); await sleep(1800);
+      await moveToEl(page, ".r-tonet", 1000); await sleep(1600);
       await click(page, '.seg[data-d="c"]', 1100); await sleep(1400);
       await moveToEl(page, "#r-reason", 900); await sleep(1200);
       await smoothScroll(page, 260, 1200);
@@ -256,7 +256,8 @@ const CLIPS = {
     await fresh(page, 11);
     await page.evaluate(() => { const b = document.getElementById("cp-fab"); if (b) b.style.display = "none"; });
     await rec(page, async () => {
-      await sleep(800);
+      await sleep(600);
+      await click(page, "#ap-login", 900); await sleep(1400);
       await moveToEl(page, await byText(page, "#view div", /^Your share/), 1000); await sleep(2000);
       await moveToEl(page, await byText(page, "#view div", /^The ring$/), 900); await sleep(1800);
       await smoothScroll(page, 420, 1500); await sleep(1200);

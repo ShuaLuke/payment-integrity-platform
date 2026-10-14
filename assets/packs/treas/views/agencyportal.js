@@ -171,7 +171,7 @@
     if (g("ap-login")) g("ap-login").onclick = function () {
       window.APP.state.agencyAuth[agency] = true;
       window.APP.auditLog("AGENCY_SIGN_IN", T.AGENCY_USERS[agency].name + " signed in to " + agency + "'s system (simulated)");
-      rerender(agency, null); // land in the inbox, where the new package is waiting
+      rerender(agency, null, ref || null); // land in the inbox (or on the referral that was opened), where the new item is waiting
     };
     mount.querySelectorAll(".ap-row").forEach(function (r) { r.onclick = function () { rerender(agency, r.getAttribute("data-id")); }; });
     mount.querySelectorAll(".ap-ref").forEach(function (r) { r.onclick = function () { rerender(agency, null, r.getAttribute("data-key")); }; });

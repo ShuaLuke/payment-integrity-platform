@@ -71,7 +71,7 @@ runs("slide2", {2: "Every payment, ", 3: "checked together", 4: ", not one at a 
   9: "Today each check sees ", 10: "one payment at a time", 11: "PV-73194: $18,940 refund to Anna Reed, ", 12: "traced to its mailbox"})
 runs("slide3", {2: "It passed ", 3: "every check", 4: "$18,940", 5: "flagged before disbursement, risk 92", 6: "Passed Do Not Pay, account ownership and TIN; ", 7: "flagged by the pattern around it",
   10: ": account 19 days old in a batch of 34, a mailbox shared with 29 payees", 11: "Refer to IRS: ", 12: "only IRS can stop it"})
-runs("slide13", {0: "02  ", 1: "BEYOND THE LISTS", 2: "Every check passed. ", 3: "TrackLight's didn't", 4: "9", 5: "TrackLight findings; Do Not Pay found none",
+runs("slide13", {0: "02  ", 1: "BEYOND THE LISTS", 2: "Every check passed. ", 3: "TrackLight's didn't", 4: "13", 5: "TrackLight findings; Do Not Pay found none",
   6: "Do Not Pay asks if a payee is on a list; ", 7: "TrackLight asks who they really are", 8: "The identity lives in ", 9: "Ohio, not Georgia",
   10: ": the W-2 employer shares an agent and an officer with 7 shells", 11: "Also: a death found ", 12: "before the Death Master File"})
 runs("slide16", {0: "04  ", 1: "HOW IT WAS FOUND", 2: "Nine events, ", 3: "six weeks", 4: "9", 5: "signals, each from one source lane, assembled the ring",
@@ -94,7 +94,7 @@ runs("slide5", {7: " read the case: investigative, payment verification, and pol
 runs("slide6", {4: "$7,640", 5: "submitted for reclamation after supervisor approval", 6: "SSA flagged a benefit redirected by phone; ", 7: "Treasury tied it to the network",
   8: "Reclaim with a coded reason and an ", 11: "suggests the Delmont case", 12: ": same account batches, mailbox and phone",
   14: " opens the case, releases a reclamation or refers to TIGTA / IRS-CI"})
-runs("slide7", {2: "One organizer", 3: ", 386 payees, three agencies", 4: "19", 5: "related payments around the one we held, in 6 account batches",
+runs("slide7", {2: "One organizer", 3: ", 386 payees, three agencies", 4: "12", 5: "related payments around the one we held, in 7 account batches",
   6: "Delmont network: ", 7: "one mailbox, one phone, nine account batches", 8: "Each account is ", 9: "in its payee's own name", 10: ", so each one passes the ownership check",
   11: "TrackLight: ", 12: "1 deceased, 1 in custody, 2 stolen IDs", 13: ", ", 14: "2 on two accounts"})
 runs("slide8", {2: "14 networks, ", 3: "several linked", 4: " by shared accounts and phones", 5: "43%", 6: "of detected networks span more than one agency",
