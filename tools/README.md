@@ -9,6 +9,8 @@ Scripts for producing the presentation assets from this site. Not loaded by the 
 | `build-fema-deck.py` | The Disaster Relief deck: takes the presented healthcare deck (unzipped), swaps in the FEMA clips, text and speaker notes |
 | `record-clips-prep.cjs` | The 8 Preparedness Grants clips (ingest, detect, explain, agents, decision, chain, allnets, funnel) |
 | `build-prep-deck.py` | The Preparedness Grants deck: takes the presented Disaster Relief deck (`~/Desktop/IBM-Payment-Integrity-Disaster-Relief.pptx`, used as-is, not unzipped), swaps in the clips, text and notes, and adds a hidden appendix slide |
+| `record-clips-treas.cjs` | The 11 Treasury clips, following the 12-step tour: ingest, detect, tracklight, explain, agents, decision, chain, allnets, funnel, handoff, irs |
+| `build-treas-deck.py` | The Treasury deck (15 slides): takes the Preparedness Grants deck, swaps in the clips, text and notes, and adds three slides (TrackLight checks, the hand-off, the IRS decision) by copying its clip slide 3 |
 | `backup-slide.cjs` | The technology-stack backup slide (PptxGenJS) |
 
 **Setup:** serve the site locally (preview config `platform-dev`, port 8171, or `python3 -m http.server 8171` from the repo root). The recorders need Playwright (`NODE_PATH=~/Desktop/aucket/node_modules`) and `ffmpeg`.
