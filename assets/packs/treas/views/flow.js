@@ -30,7 +30,7 @@
     ["Treasury payment history", "Fiscal Service disbursements", "every payment to every account", "continuous", "treasury"],
     ["Do Not Pay", "Death Master File · American InfoSource · SAM · OFAC · HHS OIG · CAIVRS · Treasury Offset Program · Bureau of Prisons · PACER", "list matches", "per payment", "treasury"],
     ["Agency signals", "SSA · IRS · OPM · VA, in the shared schema", "flags an agency raises on its own payees", "as raised", "agency"],
-    ["TrackLight due diligence", "LexisNexis · OpenCorporates · Enformion · UniCourt · PIPL · Nomino Data · obituaries and OSINT", "deaths before DMF · owners · agents · officers · court records · liens · adverse media · social links", "per payment · on change", "payee"],
+    ["TLMARK", "LexisNexis · OpenCorporates · Enformion · UniCourt · PIPL · Nomino Data · obituaries and OSINT", "deaths before DMF · owners · agents · officers · court records · liens · adverse media · social links", "per payment · on change", "payee"],
     ["Account & TIN verification", "Account-ownership service", "who owns the account · TIN check", "per payment", "bank"],
     ["Returns & reclamations", "ACH returns · bank reclamation responses", "closed accounts · non-receipt · account details", "daily", "bank"],
     ["Direct-deposit change logs", "SSA · OPM · VA", "who changed the account, how, from which phone", "daily · data-sharing agreements", "agency"],
@@ -63,7 +63,7 @@
       var checks = CHECKS.map(function (c) { return '<div style="flex:1;min-width:200px;display:flex;gap:8px;align-items:flex-start;border:0.5px solid var(--border);border-radius:8px;padding:8px 10px"><i class="ti ti-' + c[2] + '" style="color:var(--low);font-size:17px"></i><div><div style="font-weight:600;font-size:12px">' + c[0] + ' <span class="pill" style="background:var(--low-bg);color:var(--low-tx);font-size:9.5px;margin-left:3px"><i class="ti ti-circle-check"></i> passed</span></div><div style="font-size:10.5px;color:var(--text2);line-height:1.35;margin-top:2px">' + c[1] + '</div></div></div>'; }).join("");
       var srcRows = SOURCES.map(function (s) {
         var t = F.tiers.filter(function (x) { return x.k === s[4]; })[0];
-        return '<tr><td><div style="font-weight:500;font-size:12px">' + s[0] + '</div><div style="font-size:10.5px;color:var(--text2)">' + s[1] + ' · <span class="mono">' + s[2] + '</span></div></td>' +
+        return '<tr><td><div style="font-weight:500;font-size:12px">' + (s[0] === "TLMARK" ? T.tlMark("due diligence") : s[0]) + '</div><div style="font-size:10.5px;color:var(--text2)">' + s[1] + ' · <span class="mono">' + s[2] + '</span></div></td>' +
           '<td style="font-size:10.5px;color:var(--text2);white-space:nowrap">' + s[3] + '</td><td style="font-size:11px;white-space:nowrap">' + t.t + '</td></tr>';
       }).join("");
       var sig = T.SIGNALS.map(function (x) {

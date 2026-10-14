@@ -53,7 +53,8 @@
     { name: "Oakhurst Moving & Storage LLC", formed: "2026-03-24", w2s: 40, wages: 1780000, withheld: 781000 }
   ];
 
-  // The 18 payments drawn on the network graph: the flagged one plus 17 like it.
+  // The 20 payments drawn on the network graph: the flagged one plus 19 like it.
+  // Two identities appear twice, on different accounts (see IDENTITY).
   // [id, batch, program, payee, amount, status, account]
   var G = [
     ["PV-73194", "A1", "REF", "Marisol T. Avery", 18940, "held", "••6208"],
@@ -73,8 +74,18 @@
     ["PV-72488", "A6", "OPM", "Harold B. Severs", 9860, "paid", "••2246"],
     ["PV-72493", "A6", "OPM", "Ruth C. Danner", 10240, "paid", "••2251"],
     ["PV-72497", "A6", "OPM", "Leonard M. Askew", 12480, "paid", "••2263"],
-    ["PV-71781", "A5", "REF", "Shayla N. Pierce", 17890, "paid", "••0881"]
+    ["PV-71781", "A5", "REF", "Shayla N. Pierce", 17890, "paid", "••0881"],
+    ["PV-71824", "A2", "REF", "Owen P. Strickland", 16840, "paid", "••8852"],
+    ["PV-72466", "A3", "SSA", "Terrence D. Okafor", 9140, "paid", "••3328"]
   ];
+  // People on the graph who aren't who the payment says: found by TrackLight, not
+  // by Do Not Pay. Same name on two payments = the same identity on two accounts.
+  var IDENTITY = {
+    "Owen P. Strickland": { status: "deceased", label: "Deceased", note: "Died 2026-09-14 · obituary found by TrackLight · not yet in the Death Master File" },
+    "Terrence D. Okafor": { status: "custody", label: "In custody", note: "In Georgia state custody since Jan 2026 (court record) · Do Not Pay checks federal prisons only · SSA benefits should be suspended" },
+    "Marisol T. Avery": { status: "stolen", label: "ID stolen", note: "Lives in Dayton, OH · her identity is being used without her" },
+    "Lena M. Whitcomb": { status: "stolen", label: "ID stolen", note: "Lives in Toledo, OH · filed her own return separately" }
+  };
   var GRAPH = G.map(function (r, i) {
     return { id: r[0], batch: r[1], program: r[2], payee: r[3], amount: r[4], state: r[5], acct: r[6], seed: i === 0 };
   });
@@ -334,7 +345,7 @@
   var TREAS = {
     PROGRAMS: PROGRAMS, AGENCIES: AGENCIES, MAILBOX: MAILBOX, OPERATOR: OPERATOR, BATCHES: BATCHES, EMPLOYERS: EMPLOYERS, GRAPH: GRAPH, LEADS: LEADS,
     SCHEMES: SCHEMES, SCHEME_ORDER: SCHEME_ORDER, NETS: NETS, BRIDGES: BRIDGES, PLAN: PLAN, FLOW: FLOW,
-    SIGNALS: SIGNALS, DNP: DNP, TL_CATS: TL_CATS, TL: TL, SCHEMA: SCHEMA, AGENCY_USERS: AGENCY_USERS, ALERT: 75,
+    IDENTITY: IDENTITY, SIGNALS: SIGNALS, DNP: DNP, TL_CATS: TL_CATS, TL: TL, SCHEMA: SCHEMA, AGENCY_USERS: AGENCY_USERS, ALERT: 75,
     signalsFor: function (id) { return SIGNALS.filter(function (s) { return s.payment === id || s.matched.indexOf(id) >= 0; }); },
     tlFor: function (id) { var f = TL[id] || {}; return TL_CATS.map(function (c) { var r = f[c.k]; return { k: c.k, t: c.t, src: c.src, st: r ? r[0] : "pass", text: r ? r[1] : "No adverse findings" }; }); },
     SEED: "PV-73194", THREAD: "PV-71588", DECISION: "PV-72455", SEED_AMOUNT: 18940, PEER_MEDIAN: 6100,

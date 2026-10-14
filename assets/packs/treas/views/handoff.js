@@ -45,6 +45,7 @@
       document.getElementById("ho-back").onclick = function () { window.APP.goBack(); };
       document.getElementById("ho-pdf").onclick = function () { pdf(l, h ? h.rec : d.rec, h ? h.reason : reasonFor(l, d.rec), h ? h.note : noteVal(), payload); };
       var portal = document.getElementById("ho-portal"); if (portal) portal.onclick = function () { window.APP.openAgencyPortal(l.agency, id); };
+      var win = document.getElementById("ho-window"); if (win) win.onclick = function () { window.APP.openAgencyWindow(l.agency); };
       var back = document.getElementById("ho-record"); if (back) back.onclick = function () { window.APP.openAllegation(id); };
       if (h) return;
       mount.querySelectorAll("input[name=ho-rec]").forEach(function (r) { r.onchange = function () { d.rec = r.value; d.note = noteVal(); window.Views.handoff.render(mount, { id: id }); }; });
@@ -116,7 +117,7 @@
       '<div style="font-weight:500;font-size:12.5px;margin:12px 0 2px">Evidence</div>' + (ev || '<div class="muted" style="font-size:12px">No adverse findings.</div>') +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
       '<div style="flex:1;min-width:170px;border-radius:8px;padding:8px 10px;background:var(--low-bg);font-size:11.5px"><b style="color:var(--low-tx)"><i class="ti ti-circle-check"></i> Do Not Pay: ' + (dnpFail(l) ? "1 match" : "all passed") + '</b><div style="color:var(--text2);margin-top:2px">' + T.DNP.length + ' source groups · account and TIN checks</div></div>' +
-      '<div style="flex:1;min-width:170px;border-radius:8px;padding:8px 10px;background:' + (tl.length ? "var(--high-bg)" : "var(--surface)") + ';font-size:11.5px"><b style="color:' + (tl.length ? "var(--high-tx)" : "var(--text2)") + '"><i class="ti ti-radar-2"></i> TrackLight: ' + (tl.length ? tl.length + " finding" + (tl.length > 1 ? "s" : "") : "no findings") + '</b><div style="color:var(--text2);margin-top:2px">' + (tl.length ? esc(tl.map(function (f) { return f.t; }).slice(0, 3).join(" · ")) : "Due-diligence sources") + '</div></div></div>' +
+      '<div style="flex:1;min-width:170px;border-radius:8px;padding:8px 10px;background:' + (tl.length ? "var(--high-bg)" : "var(--surface)") + ';font-size:11.5px"><b style="color:' + (tl.length ? "var(--high-tx)" : "var(--text2)") + '">' + T.tlMark() + ' ' + (tl.length ? tl.length + " finding" + (tl.length > 1 ? "s" : "") : "no findings") + '</b><div style="color:var(--text2);margin-top:2px">' + (tl.length ? esc(tl.map(function (f) { return f.t; }).slice(0, 3).join(" · ")) : "Due-diligence sources") + '</div></div></div>' +
       (net ? '<div style="margin-top:10px;font-size:12px;line-height:1.5;padding:8px 10px;border-radius:8px;background:var(--accent-l)"><i class="ti ti-affiliate" style="color:var(--accent-d)"></i> Part of the <b>' + esc(net.name) + '</b>: ' + net.payees + ' payees, ' + net.agencies.join(", ") + ', ' + T.bigUsd(net.atRisk) + '. Treasury is coordinating with the other agencies.</div>' : '') +
       '</div>';
   }
@@ -149,6 +150,7 @@
       '<div style="font-size:12px;color:var(--text2);margin-top:2px">' + (dec ? esc(h.decision.by) + ', ' + esc(h.decision.title) + ' · ' + window.APP.fmtTs(h.decision.ts) + ' · ' + esc(T.agencyReasonLabel(h.decision.reason)) + (h.decision.note ? ' · “' + esc(h.decision.note) + '”' : '')
         : h.pkg + ' · ' + window.APP.fmtTs(h.sentAt) + ' by ' + esc(h.sentBy) + '. Waiting for ' + h.agency + ' to decide (' + esc(u.name) + ', ' + esc(u.title) + ').') + '</div></div>' +
       '<button class="btn" id="ho-record"><i class="ti ti-file-text"></i> Back to the payment</button>' +
+      '<button class="btn" id="ho-window" title="Open ' + h.agency + '\'s system in its own window, beside this one"><i class="ti ti-app-window"></i> New window</button>' +
       '<button class="btn primary" id="ho-portal"><i class="ti ti-external-link"></i> Open ' + h.agency + '\'s system</button></div></div>';
   }
 

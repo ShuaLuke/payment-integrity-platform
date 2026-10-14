@@ -2,7 +2,9 @@
    All networks: the funnel from one held payment to every detected network, the
    map of all networks and their cross-network links, the split by scheme type,
    and the network table. A network: a layered graph — organizer → account
-   batches → payments → the agencies that certified them — down to the payment.
+   batches → payments → the agencies that certified them — down to the payment,
+   with TrackLight's badges on people who aren't who the payment says (deceased,
+   in custody, identity stolen) and a link where one identity uses two accounts.
    Adapted from the Preparedness Grants network view (shared-component debt, see
    docs/ARCHITECTURE.md §7). Replaces Views.network. Data: treas-data.js. */
 (function () {
@@ -210,7 +212,7 @@
     var used = {}; F.GRAPH.forEach(function (g) { used[g.program] = 1; });
     return {
       core: true, hub: { name: F.OPERATOR.name, sub: F.OPERATOR.batches + " account batches · 3 banks · 1 mailbox · 1 phone" },
-      captions: { mid: "ACCOUNT BATCHES · " + F.BATCHES.length + " SHOWN OF " + F.OPERATOR.batches + " · EACH ACCOUNT IN A DIFFERENT NAME", reg: "PAYMENTS · 1 HELD + 17 FROM THE SAME NETWORK · 3 AGENCIES", bot: "CERTIFIED BY · EACH AGENCY SEES ITS OWN PAYEES" },
+      captions: { mid: "ACCOUNT BATCHES · " + F.BATCHES.length + " SHOWN OF " + F.OPERATOR.batches + " · EACH ACCOUNT IN A DIFFERENT NAME", reg: "PAYMENTS · 1 HELD + " + (F.GRAPH.length - 1) + " FROM THE SAME NETWORK · 3 AGENCIES", bot: "CERTIFIED BY · EACH AGENCY SEES ITS OWN PAYEES" },
       mids: F.BATCHES.map(function (b) { return { id: b.id, name: b.bank + " " + b.range, line2: b.accts + " accounts · opened " + b.opened.replace(/, 2026$/, ""), tag: b.role.toLowerCase(), risk: b.risk, regs: b.payments }; }),
       regs: F.GRAPH.map(function (g) { return { id: g.id, mid: g.batch, bot: g.program, amount: g.amount, seed: g.seed, name: g.payee, program: F.PROGRAMS[g.program].short, acct: g.acct, state: g.state }; }),
       bots: Object.keys(used).map(progBot)
@@ -228,18 +230,22 @@
     var pill = function (bg, stroke, label) { return '<span class="lg"><span style="width:16px;height:9px;border:1.2px solid ' + stroke + ';border-radius:5px;background:' + bg + '"></span>' + label + '</span>'; };
     var dot = function (stroke, bg, label) { return '<span class="lg"><span class="dot" style="border-color:' + stroke + ';background:' + bg + '"></span>' + label + '</span>'; };
     return dot("#001141", "#001141", m.core ? "Organizer" : "Hub") + box("#c6362f", m.core ? "Account batch · high risk" : "Spoke · high risk") + pill("#c6362f", "#c6362f", "Held payment") + pill("#fff", "#878d96", "Other payment") + dot("#8a3ffc", "#f1e8ff", "Certifying agency") +
-      '<span class="lg"><span style="width:16px;height:0;border-top:1.1px solid #a2a9b0"></span>Account batch → payment → certified by</span>';
+      '<span class="lg"><span style="width:16px;height:0;border-top:1.1px solid #a2a9b0"></span>Account batch → payment → certified by</span>' +
+      (m.core ? '<span class="lg"><span style="width:16px;height:0;border-top:1.6px dashed #0f62fe"></span>Same person, two accounts</span>' +
+        Object.keys(BADGE).map(function (k) { return '<span class="lg"><span style="font-size:8.5px;font-weight:700;letter-spacing:.04em;color:' + BADGE[k].c + ';border:1px solid ' + BADGE[k].c + ';border-radius:3px;padding:0 3px;background:#fff">' + BADGE[k].t + '</span></span>'; }).join("") +
+        '<span class="lg" style="color:var(--text3)">Badges and links: ' + F.tlMark("link analysis") + '</span>' : '');
   }
   function boxesHtml(n, m) {
     if (m.core) {
       return '<div style="flex:1;background:var(--high-bg);border:0.5px solid #f3c9c9;border-radius:8px;padding:10px 12px"><div style="font-weight:600;font-size:12.5px;color:var(--high-tx);margin-bottom:5px"><i class="ti ti-alert-triangle"></i> One organizer, ' + n.payees + ' payees</div>' +
-        '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px"><span class="tag">' + F.OPERATOR.batches + ' account batches · 3 banks</span><span class="tag">1 mailbox · ' + F.MAILBOX.payees + ' payees</span><span class="tag">8 W-2 employers · 300 W-2s</span><span class="tag">phone ' + F.OPERATOR.phone + '</span><span class="tag">IRS · SSA · OPM</span></div>' +
+        '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">' + F.tlMark() + ' <span class="tag" style="background:var(--card)">1 deceased · 1 in custody · 2 stolen identities · 2 people on two accounts</span><span class="tag">' + F.OPERATOR.batches + ' account batches · 3 banks</span><span class="tag">1 mailbox · ' + F.MAILBOX.payees + ' payees</span><span class="tag">8 W-2 employers · 300 W-2s</span><span class="tag">phone ' + F.OPERATOR.phone + '</span><span class="tag">IRS · SSA · OPM</span></div>' +
         '<div style="font-size:11.5px;color:#5c1a14;line-height:1.5">Every one of these payments passed Do Not Pay, account ownership and TIN checks. In the data they share account batches opened days apart, one mailbox, eight employers formed in the last year and one phone. <b>' + n.payees + ' payees · ' + n.payments + ' payments · ' + big(n.atRisk) + '</b> in the pattern.</div></div>';
     }
     return '<div style="flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px"><div style="font-weight:600;font-size:12.5px;margin-bottom:6px"><i class="ti ti-affiliate"></i> ' + esc(n.name) + '</div>' +
       '<div style="display:flex;gap:5px;flex-wrap:wrap"><span class="tag">' + esc(F.SCHEMES[n.scheme].label) + '</span><span class="tag">' + n.agencies.join(" · ") + '</span><span class="tag">' + n.states.join(" · ") + '</span></div>' +
       '<div style="font-size:11.5px;color:var(--text2);margin-top:8px">' + n.payees + ' payees · <b>' + big(n.atRisk) + '</b> at risk · status <b>' + esc(n.status) + '</b> · risk ' + n.risk + '.</div></div>';
   }
+  var BADGE = { deceased: { t: "DECEASED", c: "#161616" }, custody: { t: "IN CUSTODY", c: "#8a3ffc" }, stolen: { t: "ID STOLEN", c: "#c6362f" } };
   function trunc(t, n) { t = String(t || ""); return t.length > n ? t.slice(0, n - 1) + "…" : t; }
   function drawLayered(el, m, H) {
     if (typeof d3 === "undefined") { setTimeout(function () { drawLayered(el, m, H); }, 80); return; }
@@ -291,6 +297,20 @@
       if (r.seed) g.append("text").attr("y", -17).attr("text-anchor", "middle").attr("font-size", 8.5).attr("font-weight", 700).attr("letter-spacing", "0.04em").attr("fill", "#c6362f").text("HELD");
       return g;
     });
+    // TrackLight: one identity on two accounts (an arc over the payments), and who each person really is
+    var byName = {}; regs.forEach(function (r) { if (r.name) (byName[r.name] = byName[r.name] || []).push(r); });
+    Object.keys(byName).forEach(function (nm) {
+      var rs = byName[nm]; if (rs.length < 2) return;
+      var x1 = R[rs[0].id].x, x2 = R[rs[1].id].x, top = yReg - 46 - Math.min(40, Math.abs(x2 - x1) / 12);
+      gN.insert("path", ":first-child").attr("d", "M" + x1 + "," + (yReg - 11) + " C" + x1 + "," + top + " " + x2 + "," + top + " " + x2 + "," + (yReg - 11)).attr("fill", "none").attr("stroke", "#0f62fe").attr("stroke-width", 1.6).attr("stroke-dasharray", "5,3");
+      gN.append("text").attr("x", (x1 + x2) / 2).attr("y", top + 6).attr("text-anchor", "middle").attr("font-size", 8.5).attr("font-weight", 600).attr("fill", "#0043ce").attr("paint-order", "stroke").attr("stroke", "#fff").attr("stroke-width", 3).text("same person · " + nm);
+    });
+    regN.forEach(function (g) {
+      var r = g.datum(), idn = F.IDENTITY[r.name]; if (!idn) return;
+      var b = BADGE[idn.status], w = b.t.length * 5.2 + 8;
+      g.append("rect").attr("x", -w / 2).attr("y", 14).attr("width", w).attr("height", 12).attr("rx", 3).attr("fill", "#fff").attr("stroke", b.c).attr("stroke-width", 1);
+      g.append("text").attr("y", 23).attr("text-anchor", "middle").attr("font-size", 7.5).attr("font-weight", 700).attr("letter-spacing", "0.04em").attr("fill", b.c).text(b.t);
+    });
     var botN = bots.map(function (b) {
       var p = B[b.id], g = gN.append("g").attr("transform", "translate(" + p.x + "," + yBot + ")").attr("cursor", "help").datum(b);
       g.append("rect").attr("x", -40).attr("y", -14).attr("width", 80).attr("height", 50).attr("fill", "transparent");
@@ -321,6 +341,8 @@
         focus(function (q) { return q.id === r.id; });
         showTip(e, (r.seed ? "<div style='color:#ffb4a8;margin-bottom:2px'>Held before payment · passed every list check</div>" : "<div style='color:#c1c7cd;margin-bottom:2px'>Payment · " + (r.state === "pending" ? "pending" : "paid") + "</div>") +
           "<b>" + esc(r.id) + " · " + usd(r.amount) + "</b>" + (r.name ? "<div style='color:#c1c7cd'>" + esc(r.name) + " · " + esc(r.program || "") + "<br>Into account " + esc(r.acct || "") + " · certified by " + esc(F.PROGRAMS[r.bot] ? F.PROGRAMS[r.bot].agency : "") + "</div>" : "") +
+          (F.IDENTITY[r.name] ? "<div style='color:#ffd7a8;margin-top:3px'>TrackLight · " + esc(F.IDENTITY[r.name].label) + ": " + esc(F.IDENTITY[r.name].note) + "</div>" : "") +
+          ((byName[r.name] || []).length > 1 ? "<div style='color:#a6c8ff;margin-top:2px'>Same identity on " + byName[r.name].map(function (q) { return esc(q.acct); }).join(" and ") + "</div>" : "") +
           (F.lead(r.id) ? "<div style='color:#a6c8ff;margin-top:2px'>Click to open the payment</div>" : ""));
       }).on("mouseout", reset).on("click", function () { if (F.lead(r.id)) window.APP.openAllegation(r.id); });
     });

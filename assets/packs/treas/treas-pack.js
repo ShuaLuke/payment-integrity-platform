@@ -152,6 +152,7 @@
     APP.nav("agencyportal", { agency: agency, id: id });
   };
   APP.leaveAgencyPortal = function () {
+    if (APP.state.sysWindow) return; // the agency's own window stays the agency's
     var s = APP.state._preAgencySnap; APP.state._preAgencySnap = null;
     if (s && s.view && s.view !== "agencyportal") { APP.state.allegationId = s.allegationId; APP.nav(s.view, { id: s.allegationId }); }
     else APP.nav("home");
@@ -261,7 +262,7 @@
         { sev: "high", text: "The refunds go to accounts opened in batches at three online banks: runs of neighboring account numbers, opened within days, each in a different payee's name. That's why each one passes the ownership check." },
         { sev: "high", text: "Phone (470) 555-0148 made 37 direct-deposit changes for SSA and OPM payees since April, moving them to accounts in the same batches. The same phone is listed for Delmont Tax & Business Services, which has no preparer ID (PTIN)." },
         { sev: "medium", text: "The account batches continue into a Florida mailbox ring's accounts, and the phone also redirected annuities for a Gulf Coast ring." }
-      ], sources: ["Treasury payment history", "Agency payment files", "OpenCorporates", "SSA and OPM change logs", "USPS mailbox list"] },
+      ], sources: ["Treasury payment history", "Agency payment files", "TrackLight", "SSA and OPM change logs", "USPS mailbox list"] },
       { role: "Payment verification", focus: "Do Not Pay · account · TIN · patterns", icon: "shield-check", findings: [
         { sev: "low", text: "Do Not Pay: no match in the Death Master File, SSA's Numident, SAM.gov exclusions or the other sources. Account ownership and TIN checks passed." },
         { sev: "high", text: "Account age: " + (a.acctOpened ? "opened " + a.acctOpened : "new") + ", in batch " + (a.batchRec ? a.batchRec.bank + " " + a.batchRec.range + " (" + a.batchRec.accts + " accounts)" : "—") + "." },
@@ -351,7 +352,10 @@
   }
   // inside the agency's system, Treasury's controls step out of the way (the logo returns)
   var st = document.createElement("style");
-  st.textContent = "body[data-sys=agency] .navitems,body[data-sys=agency] #mode-toggle,body[data-sys=agency] #reset-demo,body[data-sys=agency] .conn,body[data-sys=agency] #role-switch,body[data-sys=agency] #prog-switch,body[data-sys=agency] #cp-fab,body[data-sys=agency] #cp-panel{visibility:hidden}";
+  // TrackLight's mark wherever its data shows (a styled wordmark until the team has logo assets)
+  T.tlMark = function (txt) { return '<span class="tl-mark"><i class="ti ti-radar-2"></i>TrackLight' + (txt ? '<span class="tl-sub">' + txt + '</span>' : '') + '</span>'; };
+  st.textContent = ".tl-mark{display:inline-flex;align-items:center;gap:4px;font-weight:700;letter-spacing:-.01em;color:#0e5a63;background:#e3f6f4;border:0.5px solid #9fd9d2;border-radius:5px;padding:1px 7px 1px 6px;font-size:11px;white-space:nowrap}.tl-mark .tl-sub{font-weight:500;color:#2f6d73;margin-left:3px}" +
+    "body[data-sys=agency] .navitems,body[data-sys=agency] #mode-toggle,body[data-sys=agency] #reset-demo,body[data-sys=agency] .conn,body[data-sys=agency] #role-switch,body[data-sys=agency] #prog-switch,body[data-sys=agency] .brand-name,body[data-sys=agency] #cp-fab,body[data-sys=agency] #cp-panel{visibility:hidden}";
   document.head.appendChild(st);
   var baseNav = APP.nav;
   APP.nav = function (view, params) { document.body.setAttribute("data-sys", view === "agencyportal" ? "agency" : "treasury"); return baseNav(view, params); };

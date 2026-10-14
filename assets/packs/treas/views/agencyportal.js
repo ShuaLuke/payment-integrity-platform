@@ -46,7 +46,7 @@
       '<div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding:8px 10px;border-radius:8px;background:var(--low-bg);font-size:11.5px;color:var(--low-tx)"><i class="ti ti-id-badge-2" style="font-size:17px"></i> PIV card detected</div>' +
       '<button class="btn primary" id="ap-login" style="width:100%;justify-content:center;margin-top:14px"><i class="ti ti-login"></i> Sign in as ' + esc(u.name) + '</button>' +
       '<div style="font-size:10.5px;color:var(--text3);margin-top:10px;text-align:center">Demo sign-in. No credentials are checked or stored.</div>' +
-      '<div style="text-align:center;margin-top:12px"><span class="btn" id="ap-exit" style="font-size:11.5px"><i class="ti ti-arrow-left"></i> Back to Treasury</span></div></div>';
+      (window.APP.state.sysWindow ? '' : '<div style="text-align:center;margin-top:12px"><span class="btn" id="ap-exit" style="font-size:11.5px"><i class="ti ti-arrow-left"></i> Back to Treasury</span></div>') + '</div>';
   }
 
   function workspace(agency, u, id) {
@@ -56,7 +56,7 @@
       '<div class="avatar" style="width:34px;height:34px;flex:none;background:#1a6b5f">' + u.initials + '</div>' +
       '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13.5px">' + esc(u.name) + '</div><div style="font-size:11px;color:var(--text2)">' + esc(u.title) + ' · ' + agency + '</div></div>' +
       (fresh ? '<span class="pill" style="background:var(--high-bg);color:var(--high-tx)"><i class="ti ti-bell"></i> ' + fresh + ' new from Treasury</span>' : '') +
-      '<span class="btn" id="ap-exit" style="font-size:11.5px"><i class="ti ti-arrow-left"></i> Return to Treasury</span></div>' +
+      (window.APP.state.sysWindow ? '' : '<span class="btn" id="ap-exit" style="font-size:11.5px"><i class="ti ti-arrow-left"></i> Return to Treasury</span>') + '</div>' +
       (id ? detail(agency, T.handoff(id)) : inbox(agency, items));
   }
 
@@ -82,7 +82,8 @@
     var tl = T.tlFor(h.id).filter(function (f) { return f.st !== "pass"; });
     var dec = h.decision ? T.agencyDecision(l, h.decision.c) : null;
     var decide = dec ? '<div class="card" style="margin:0;border-color:' + TONE[dec.tone][0] + '"><div style="display:flex;gap:10px;align-items:center"><i class="ti ti-circle-check" style="font-size:24px;color:var(--low)"></i><div><div style="font-weight:600;font-size:13.5px">Decision sent to Treasury: ' + esc(dec.t) + '</div><div style="font-size:11.5px;color:var(--text2);margin-top:2px">' + esc(T.agencyReasonLabel(h.decision.reason)) + ' · ' + window.APP.fmtTs(h.decision.ts) + '</div></div></div>' +
-      '<button class="btn primary" id="ap-back-treas" style="width:100%;justify-content:center;margin-top:12px"><i class="ti ti-arrow-back-up"></i> See it in Treasury</button></div>'
+      (window.APP.state.sysWindow ? '<div style="margin-top:12px;font-size:11.5px;color:var(--text2);text-align:center"><i class="ti ti-arrows-exchange"></i> Treasury\'s window has it now.</div></div>'
+        : '<button class="btn primary" id="ap-back-treas" style="width:100%;justify-content:center;margin-top:12px"><i class="ti ti-arrow-back-up"></i> See it in Treasury</button></div>')
       : '<div class="card" style="margin:0"><div style="font-weight:600;font-size:13.5px;margin-bottom:8px">Your decision</div>' +
       T.AGENCY_DECISIONS[stage].map(function (o) {
         var on = o.c === p.c, c = TONE[o.tone];
@@ -100,7 +101,7 @@
       '<div style="margin-top:10px;padding:9px 11px;border-radius:8px;background:var(--med-bg)"><div style="font-size:10.5px;color:var(--med-tx);text-transform:uppercase;letter-spacing:.04em">Treasury recommends</div><div style="font-weight:600;font-size:13.5px;color:var(--med-tx);margin-top:2px">' + esc(T.recLabel(l, h.rec)) + '</div>' +
       '<div style="font-size:12px;line-height:1.5;margin-top:4px;color:var(--ink)">' + esc(h.note) + '</div></div>' +
       '<div style="font-weight:500;font-size:12.5px;margin:12px 0 2px">What Treasury found</div>' + ev +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:11.5px"><span class="pill" style="background:var(--low-bg);color:var(--low-tx)"><i class="ti ti-circle-check"></i> Do Not Pay passed</span>' + (tl.length ? '<span class="pill" style="background:var(--high-bg);color:var(--high-tx)"><i class="ti ti-radar-2"></i> TrackLight: ' + tl.length + ' findings</span>' : '') + (h.payload.network ? '<span class="pill" style="background:var(--accent-l);color:var(--accent-d)"><i class="ti ti-affiliate"></i> Network: ' + h.payload.network.payees + ' payees · ' + h.payload.network.agencies.join(", ") + '</span>' : '') + '</div></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:11.5px"><span class="pill" style="background:var(--low-bg);color:var(--low-tx)"><i class="ti ti-circle-check"></i> Do Not Pay passed</span>' + (tl.length ? T.tlMark(tl.length + ' findings') : '') + (h.payload.network ? '<span class="pill" style="background:var(--accent-l);color:var(--accent-d)"><i class="ti ti-affiliate"></i> Network: ' + h.payload.network.payees + ' payees · ' + h.payload.network.agencies.join(", ") + '</span>' : '') + '</div></div>' +
       '<details class="card" style="margin:0"><summary style="cursor:pointer;font-weight:500;font-size:12.5px"><i class="ti ti-braces" style="color:#1a6b5f"></i> Structured package as received · ' + esc(T.SCHEMA.name) + '</summary><pre style="margin:8px 0 0;max-height:300px;overflow:auto;background:#0b1526;color:#d0e2ff;border-radius:8px;padding:10px;font-size:10.5px;white-space:pre-wrap">' + esc(JSON.stringify(h.payload, null, 2)) + '</pre></details>' +
       '</div><div style="flex:1;min-width:280px">' + decide + '</div></div>';
   }
