@@ -133,6 +133,11 @@
       respondBy: APP.fmtDate(due)
     };
   };
+  APP.openNetwork = function (netId) {
+    (APP.state.hist = APP.state.hist || []).push(APP.snapshot());
+    APP.state.networkScenario = netId || "all";
+    APP.nav("network");
+  };
   APP.openHandoff = function (id, rec) {
     (APP.state.hist = APP.state.hist || []).push(APP.snapshot());
     APP.state.allegationId = id;

@@ -2,7 +2,8 @@
    file. Left rail: the payee, the payment, the deposit account, the disbursement.
    Tabs: Overview (why flagged: risk factors, agency flags) · Checks (Do Not Pay
    beside TrackLight, then the pattern checks) · Address (every federal payee at the mailbox) ·
-   Account (the account batch, the W-2 employers, the deposit history) · Links ·
+   Account (the account batch, the W-2 employers, the deposit history) · Network
+   (the payment's network drawn in place, this payment marked, linked payments) ·
    History · Decision. Header: Send to the certifying agency (the recommendation
    package), and a strip showing what the agency decided. Replaces Views.claim,
    so APP.openAllegation(id) opens it. */
@@ -41,7 +42,7 @@
       document.getElementById("r-sum").onclick = function () { if (window.COPILOT) window.COPILOT.summarize(id); };
       document.getElementById("r-send").onclick = function () { window.APP.openHandoff(id); };
       var hb = document.getElementById("r-hbanner"); if (hb) hb.onclick = function () { window.APP.openHandoff(id); };
-      var tn = document.getElementById("r-thread"); if (tn) tn.onclick = function () { window.APP.state.networkScenario = "N01"; window.APP.nav("network"); };
+      var tn = document.getElementById("r-thread"); if (tn) tn.onclick = function () { show("links"); };
       var am = document.getElementById("r-assign-me"); if (am) am.onclick = function () { window.APP.assignCase(id, window.APP.ROLES[window.APP.state.role].name); window.APP.startLeadReview(id); window.Views.claim.render(mount, { id: id }); };
       mount.querySelectorAll(".ctab").forEach(function (b) { b.onclick = function () { show(b.getAttribute("data-tab")); }; });
       show(curTab);
@@ -85,7 +86,7 @@
       '<div style="flex:1;font-size:12.5px;line-height:1.45">Paid into <b>' + esc(a.bank) + ' ' + a.acct + '</b>, one of ' + b.accts + ' accounts in batch ' + b.range + '. ' +
       'Mailbox <b>PMB 212, Carver Mill, GA</b> received <b>' + T.MAILBOX.payments + ' federal payments</b> for ' + T.MAILBOX.payees + ' payees · <b style="color:#ffb4a8">' + T.bigUsd(T.MAILBOX.amount) + '</b>. ' +
       'Part of the Delmont network.</div>' +
-      '<span style="font-size:11.5px;color:#a6c8ff;white-space:nowrap">Open the network <i class="ti ti-arrow-right"></i></span></div>';
+      '<span style="font-size:11.5px;color:#a6c8ff;white-space:nowrap">See the network <i class="ti ti-arrow-right"></i></span></div>';
   }
 
   function tile(label, icon, title, lines, tone) {
@@ -122,7 +123,7 @@
     return '<div class="card" style="padding:10px 14px 8px;margin-bottom:12px"><div style="display:flex;align-items:flex-start">' + dots + '</div>' + cta + '</div>';
   }
 
-  var TABS = [["overview", "Overview"], ["checks", "Checks"], ["documents", "Address"], ["procurement", "Account"], ["links", "Links"], ["history", "History"], ["decision", "Decision"]];
+  var TABS = [["overview", "Overview"], ["checks", "Checks"], ["documents", "Address"], ["procurement", "Account"], ["links", "Network"], ["history", "History"], ["decision", "Decision"]];
   function tabBar(undecided) {
     return '<div style="display:flex;flex-wrap:wrap;gap:2px;border-bottom:0.5px solid var(--border);margin-bottom:10px">' + TABS.map(function (t) {
       return '<button class="ctab' + (t[0] === curTab ? " active" : "") + '" data-tab="' + t[0] + '">' + (t[0] === "decision" && ctx && ctx.a.mode !== "prepay" ? "Finding" : t[1]) + (t[0] === "decision" && undecided ? ' <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);vertical-align:middle;margin-left:2px"></span>' : "") + '</button>';
@@ -136,6 +137,11 @@
     p.innerHTML = ({ overview: overview, checks: checks, documents: address, procurement: account, links: links, history: history, decision: decision })[name](a);
     if (name === "decision") wireDecision(a);
     if (name === "links" || name === "documents") p.querySelectorAll("[data-open]").forEach(function (r) { r.onclick = function () { window.APP.openAllegation(r.getAttribute("data-open")); }; });
+    if (name === "links" && a.network) {
+      var cv = document.getElementById("r-netcanvas"); if (cv && window.Views.network.embed) window.Views.network.embed(cv, a.network, a.id, 440);
+      var full = document.getElementById("r-netfull"); if (full) full.onclick = function () { window.APP.openNetwork(a.network); };
+    }
+    p.querySelectorAll(".r-tonet").forEach(function (b) { b.onclick = function () { show("links"); }; });
     if (name === "overview") { var b = document.getElementById("r-explain"); if (b) b.onclick = function () { if (window.COPILOT) window.COPILOT.summarize(a.id); }; }
   }
 
@@ -300,11 +306,17 @@
     return '<div class="card" style="margin:0">' + head + batchTbl + why + emp + '</div>';
   }
 
+  // the payment's network, drawn here so the analyst never has to leave the record
   function links(a) {
-    var mine = T.GRAPH.filter(function (g) { return g.id === a.id; })[0];
-    if (!mine) return '<div class="card" style="margin:0;color:var(--text2);font-size:12px"><i class="ti ti-circle-dashed"></i> ' + (a.network ? "Part of " + esc(T.net(a.network).name) + "." : "No shared accounts, addresses, phones or employers with other payees.") + '</div>';
+    if (!a.network) return '<div class="card" style="margin:0;color:var(--text2);font-size:12px"><i class="ti ti-circle-dashed"></i> No network: this payment shares no account batch, address, phone or employer with other payees.</div>';
+    var n = T.net(a.network), mine = T.GRAPH.filter(function (g) { return g.id === a.id; })[0];
+    var graph = '<div class="card" style="margin:0 0 12px;padding:0;overflow:hidden"><div style="padding:10px 12px;border-bottom:0.5px solid var(--border2);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">' +
+      '<div><div style="font-weight:500;font-size:13px"><i class="ti ti-affiliate" style="color:var(--accent-d)"></i> ' + esc(n.name) + ' <span class="muted" style="font-weight:400;font-size:11px">· ' + esc(T.SCHEMES[n.scheme].label.toLowerCase()) + ' · ' + n.payees + ' payees · ' + n.agencies.join(", ") + ' · ' + T.bigUsd(n.atRisk) + '</span></div><div style="font-size:11px;color:var(--text2)">This payment is outlined in ' + (a.id === T.SEED ? 'red' : 'blue') + '. Hover a batch, a payment or an agency; click a payment to open it.</div></div>' +
+      '<button class="btn" id="r-netfull" style="font-size:11.5px"><i class="ti ti-arrows-maximize"></i> Open the full network view</button></div>' +
+      '<div id="r-netcanvas" style="background:var(--surface)"></div></div>';
+    if (!mine) return graph;
     var rel = T.GRAPH.filter(function (g) { return g.id !== a.id && (g.batch === mine.batch || g.program === mine.program); }).slice(0, 12);
-    return '<div class="card" style="padding:0;overflow:hidden;margin:0"><div style="padding:10px 12px;font-weight:500;font-size:13px;border-bottom:0.5px solid var(--border2)"><i class="ti ti-link" style="color:var(--accent-d)"></i> Payments linked to this one <span class="muted" style="font-weight:400;font-size:11px">· ' + rel.length + ' shown of ' + T.net("N01").payments + ' in the network</span></div>' +
+    return graph + '<div class="card" style="padding:0;overflow:hidden;margin:0"><div style="padding:10px 12px;font-weight:500;font-size:13px;border-bottom:0.5px solid var(--border2)"><i class="ti ti-link" style="color:var(--accent-d)"></i> Payments linked to this one <span class="muted" style="font-weight:400;font-size:11px">· ' + rel.length + ' shown of ' + T.net("N01").payments + ' in the network</span></div>' +
       '<table><thead><tr><th>Payment</th><th>Payee</th><th>Shares</th><th class="right">Amount</th><th>Status</th></tr></thead><tbody>' +
       rel.map(function (g) {
         var sh = [g.batch === mine.batch ? "account batch" : null, "mailbox PMB 212", g.program === mine.program ? "same payment type" : null].filter(Boolean).join(" · ");
@@ -333,13 +345,14 @@
           : h ? '<div style="font-size:12.5px">' + (h.decision ? '<i class="ti ti-' + T.agencyDecision(a, h.decision.c).icon + '"></i> ' + esc(T.agencyDecision(a, h.decision.c).t) + ' by ' + a.agency + ' · ' + esc(T.agencyReasonLabel(h.decision.reason)) : '<i class="ti ti-clock"></i> Sent to ' + a.agency + ': ' + esc(T.recLabel(a, h.rec)) + ' · awaiting ' + a.agency + '\'s decision') + '</div><button class="btn r-pkg" style="margin-top:10px"><i class="ti ti-package"></i> View package</button>'
           : '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
           '<button class="seg r-pp" data-act="pay" style="flex:1"><i class="ti ti-check"></i> Release<div class="sub">no concerns · pays on schedule</div></button>' +
-          '<button class="seg r-pp" data-act="refer" style="flex:1;' + (refer ? "border-color:var(--accent);background:var(--accent-l)" : "") + '"><i class="ti ti-send"></i> Refer to ' + a.agency + (refer ? ' <span class="pill" style="background:var(--accent);color:#fff;font-size:9.5px">model</span>' : '') + '<div class="sub">recommend ' + esc(T.recLabel(a, T.defaultRec(a)).toLowerCase()) + ' · ' + a.agency + ' decides</div></button></div>') + '</div>';
+          '<button class="seg r-pp" data-act="refer" style="flex:1;' + (refer ? "border-color:var(--accent);background:var(--accent-l)" : "") + '"><i class="ti ti-send"></i> Refer to ' + a.agency + (refer ? ' <span class="pill" style="background:var(--accent);color:#fff;font-size:9.5px">model</span>' : '') + '<div class="sub">recommend ' + esc(T.recLabel(a, T.defaultRec(a)).toLowerCase()) + ' · ' + a.agency + ' decides</div></button></div>') + (a.network ? '<div style="margin-top:10px"><button type="button" class="btn r-tonet" style="font-size:11px;padding:3px 9px"><i class="ti ti-affiliate"></i> See where this payment sits in the network</button></div>' : '') + '</div>';
     }
     var dec = window.APP.decisionFor(a.id);
+    var netBtn = a.network ? '<button type="button" class="btn r-tonet" style="font-size:11px;padding:3px 9px"><i class="ti ti-affiliate"></i> See where this payment sits in the network</button>' : '';
     var intro = '<div style="font-size:11.5px;color:var(--text2);margin-bottom:10px">Treasury records what it found. A supervisor approves the finding, and the recommendation goes to ' + esc(T.AGENCIES[a.agency].name) + ', which decides on recovery. Only ' + a.agency + ' can act on the payment.</div>';
-    if (dec) return '<div class="card" style="margin:0 0 12px"><div style="font-weight:500;font-size:13px;margin-bottom:3px">Treasury\'s finding</div>' + intro + '<div style="font-size:12.5px"><b>' + esc(T.FINDING[dec.outcome]) + '</b> · ' + esc(window.APP.reasonLabel(dec.outcome, dec.reason)) + '</div><div style="font-size:12px;color:var(--text2);margin-top:4px">' + (dec.reviewState === "pending" ? '<i class="ti ti-clock"></i> With the supervisor (Karen Boyd) for approval.' : dec.reviewState === "approved" ? '<i class="ti ti-check" style="color:var(--low)"></i> Approved by the supervisor.' : dec.reviewState === "returned" ? '<i class="ti ti-arrow-back"></i> Returned by the supervisor' + (dec.returnNote ? ': ' + esc(dec.returnNote) : '.') : "") + '</div></div>' + agencyCard(a);
+    if (dec) return '<div class="card" style="margin:0 0 12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px"><div style="font-weight:500;font-size:13px">Treasury\'s finding</div>' + netBtn + '</div>' + intro + '<div style="font-size:12.5px"><b>' + esc(T.FINDING[dec.outcome]) + '</b> · ' + esc(window.APP.reasonLabel(dec.outcome, dec.reason)) + '</div><div style="font-size:12px;color:var(--text2);margin-top:4px">' + (dec.reviewState === "pending" ? '<i class="ti ti-clock"></i> With the supervisor (Karen Boyd) for approval.' : dec.reviewState === "approved" ? '<i class="ti ti-check" style="color:var(--low)"></i> Approved by the supervisor.' : dec.reviewState === "returned" ? '<i class="ti ti-arrow-back"></i> Returned by the supervisor' + (dec.returnNote ? ': ' + esc(dec.returnNote) : '.') : "") + '</div></div>' + agencyCard(a);
     return '<div class="card" style="margin:0 0 12px">' +
-      '<div style="font-weight:500;font-size:13px;margin-bottom:3px">Treasury\'s finding</div>' + intro +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px"><div style="font-weight:500;font-size:13px">Treasury\'s finding</div>' + netBtn + '</div>' + intro +
       '<div style="display:flex;gap:8px">' +
       '<button class="seg" data-d="c">Improper<div class="sub">recommend ' + a.agency + ' reclaim it from the bank</div></button>' +
       '<button class="seg" data-d="d">Proper<div class="sub">the payment stands</div></button>' +

@@ -16,6 +16,19 @@
   var ovFilter = { scheme: "" };
 
   window.Views.network = {
+    // the network drawn inside a payment's record, that payment marked
+    embed: function (el, netId, currentId, H) {
+      var n = F.net(netId); if (!n) return;
+      var m = netId === "N01" ? coreModel() : seedModel(n);
+      if (currentId && !m.regs.some(function (r) { return r.id === currentId; })) {
+        var l = F.lead(currentId);
+        if (l) m.regs.unshift({ id: l.id, mid: m.mids[0].id, bot: l.program, amount: l.amount, seed: false, name: l.payee, program: l.prog.short, acct: l.acct, state: l.mode === "prepay" ? "held" : "paid" });
+      }
+      m.regs.forEach(function (r) { r.cur = r.id === currentId; });
+      el.style.height = H + "px"; el.style.position = "relative";
+      drawLayered(el, m, H);
+      return m;
+    },
     render: function (mount) {
       var btn = function (id, label, sub) { return '<button class="nscn" data-scn="' + id + '" style="border:none;background:none;border-radius:6px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--sans);display:flex;flex-direction:column;align-items:flex-start;line-height:1.2"><span style="font-weight:500">' + label + '</span><span style="font-size:9.5px;color:var(--text3)">' + sub + '</span></button>'; };
       mount.innerHTML = '<div class="page">' +
@@ -29,8 +42,10 @@
         current = scn; setActive(scn === "N01" ? "N01" : "all");
         var ov = document.getElementById("n-overview"), cv = document.getElementById("n-canvas"), back = document.getElementById("n-back"), lg = document.getElementById("n-legend"), bx = document.getElementById("n-boxes");
         ov.hidden = scn !== "all"; cv.hidden = scn === "all"; lg.hidden = scn === "all"; back.hidden = scn === "all";
-        back.innerHTML = '<button class="btn" id="n-back-btn"><i class="ti ti-arrow-left"></i> All networks</button>';
+        var hist = window.APP.state.hist || [], last = hist[hist.length - 1], fromRec = last && last.view === "claim" && last.allegationId;
+        back.innerHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (fromRec ? '<button class="btn primary" id="n-back-rec"><i class="ti ti-arrow-left"></i> Back to payment ' + esc(fromRec) + '</button>' : '') + '<button class="btn" id="n-back-btn">' + (fromRec ? '' : '<i class="ti ti-arrow-left"></i> ') + 'All networks</button></div>';
         document.getElementById("n-back-btn").onclick = function () { paint("all"); };
+        var nbr = document.getElementById("n-back-rec"); if (nbr) nbr.onclick = function () { window.APP.goBack(); };
         if (scn === "all") { ov.innerHTML = overviewHtml(); bx.innerHTML = ""; wireOverview(ov, paint); return; }
         var m = scn === "N01" ? coreModel() : seedModel(F.net(scn));
         cv.style.height = "520px";
@@ -323,9 +338,11 @@
     var shortName = function (n) { var p = String(n || "").replace(/ [A-Z]\. /, " ").split(" "); return p.length > 1 ? p[0][0] + ". " + p.slice(1).join(" ") : n; };
     var regN = regs.map(function (r) {
       var a = R[r.id], c = agColor(r), g = gN.append("g").attr("transform", "translate(" + a.x + "," + yReg + ")").attr("cursor", "pointer").datum(r);
-      g.append("rect").attr("x", -a.w / 2).attr("y", -ph / 2).attr("width", a.w).attr("height", ph).attr("rx", named ? 8 : 11).attr("fill", r.seed ? "#c6362f" : "#fff").attr("stroke", r.seed ? "#c6362f" : c).attr("stroke-width", r.seed ? 2 : 1.4).attr("stroke-dasharray", r.state === "pending" ? "3,2" : null);
+      var cur = r.cur && !r.seed;
+      g.append("rect").attr("x", -a.w / 2).attr("y", -ph / 2).attr("width", a.w).attr("height", ph).attr("rx", named ? 8 : 11).attr("fill", r.seed ? "#c6362f" : cur ? "#edf5ff" : "#fff").attr("stroke", r.seed ? "#c6362f" : cur ? "#0f62fe" : c).attr("stroke-width", r.seed ? 2 : cur ? 2.4 : 1.4).attr("stroke-dasharray", r.state === "pending" ? "3,2" : null);
+      if (cur) g.append("text").attr("y", -ph / 2 - 6).attr("text-anchor", "middle").attr("font-size", 8.5).attr("font-weight", 700).attr("letter-spacing", "0.04em").attr("fill", "#0f62fe").text("THIS PAYMENT");
       if (r.name) {
-        g.append("text").attr("y", -3).attr("text-anchor", "middle").attr("font-size", 9.5).attr("font-weight", 600).attr("fill", r.seed ? "#fff" : "#001141").text(trunc(shortName(r.name), Math.floor(a.w / 5.6)));
+        g.append("text").attr("y", -3).attr("text-anchor", "middle").attr("font-size", a.w < 90 ? 8.5 : 9.5).attr("font-weight", 600).attr("fill", r.seed ? "#fff" : "#001141").text(trunc(shortName(r.name), Math.floor(a.w / (a.w < 90 ? 5 : 5.6))));
         g.append("text").attr("y", 9).attr("text-anchor", "middle").attr("font-size", 8.5).attr("font-family", "IBM Plex Mono,monospace").attr("fill", r.seed ? "#ffd7d9" : "#4d5358").text(kf(r.amount) + " · " + (F.PROGRAMS[r.bot] ? F.PROGRAMS[r.bot].agency : r.bot));
       } else g.append("text").attr("y", 3.5).attr("text-anchor", "middle").attr("font-size", a.w < 42 ? 8 : 9).attr("font-weight", 600).attr("font-family", "IBM Plex Mono,monospace").attr("fill", r.seed ? "#fff" : "#343a3f").text(kf(r.amount));
       if (r.seed) g.append("text").attr("y", -ph / 2 - 6).attr("text-anchor", "middle").attr("font-size", 8.5).attr("font-weight", 700).attr("letter-spacing", "0.04em").attr("fill", "#c6362f").text(r.state === "held" ? "HELD" : "THIS PAYMENT");
