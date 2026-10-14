@@ -354,7 +354,8 @@
   var st = document.createElement("style");
   // TrackLight's mark wherever its data shows (a styled wordmark until the team has logo assets)
   T.tlMark = function (txt) { return '<span class="tl-mark"><i class="ti ti-radar-2"></i>TrackLight' + (txt ? '<span class="tl-sub">' + txt + '</span>' : '') + '</span>'; };
-  st.textContent = ".tl-mark{display:inline-flex;align-items:center;gap:4px;font-weight:700;letter-spacing:-.01em;color:#0e5a63;background:#e3f6f4;border:0.5px solid #9fd9d2;border-radius:5px;padding:1px 7px 1px 6px;font-size:11px;white-space:nowrap}.tl-mark .tl-sub{font-weight:500;color:#2f6d73;margin-left:3px}" +
+  // room under every screen so the floating Investigative Assistant button never covers its last row
+  st.textContent = "#view{padding-bottom:84px}.tl-mark{display:inline-flex;align-items:center;gap:4px;font-weight:700;letter-spacing:-.01em;color:#0e5a63;background:#e3f6f4;border:0.5px solid #9fd9d2;border-radius:5px;padding:1px 7px 1px 6px;font-size:11px;white-space:nowrap}.tl-mark .tl-sub{font-weight:500;color:#2f6d73;margin-left:3px}" +
     "body[data-sys=agency] .navitems,body[data-sys=agency] #mode-toggle,body[data-sys=agency] #reset-demo,body[data-sys=agency] .conn,body[data-sys=agency] #role-switch,body[data-sys=agency] #prog-switch,body[data-sys=agency] .brand-name,body[data-sys=agency] #cp-fab,body[data-sys=agency] #cp-panel{visibility:hidden}";
   document.head.appendChild(st);
   var baseNav = APP.nav;
