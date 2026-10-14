@@ -30,7 +30,7 @@
     ["Treasury payment history", "Fiscal Service disbursements", "every payment to every account", "continuous", "treasury"],
     ["Do Not Pay", "Death Master File · American InfoSource · SAM · OFAC · HHS OIG · CAIVRS · Treasury Offset Program · Bureau of Prisons · PACER", "list matches", "per payment", "treasury"],
     ["Agency signals", "SSA · IRS · OPM · VA, in the shared schema", "flags an agency raises on its own payees", "as raised", "agency"],
-    ["TLMARK", "LexisNexis · OpenCorporates · Enformion · UniCourt · PIPL · Nomino Data · obituaries and OSINT", "deaths before DMF · owners · agents · officers · court records · liens · adverse media · social links", "per payment · on change", "payee"],
+    ["TLMARK", "LexisNexis · OpenCorporates · IRS 990 · USAspending · Federal Audit Clearinghouse · Enformion · UniCourt · Perplexity · LinkedIn · PIPL · Nomino Data · obituaries and OSINT", "20 checks: deceased · social and professional links · owners, agents, officers, directors · non-profits, procurement, audits · criminal, liens, bankruptcies, assets, news · watchlists · network", "per payment · on change", "payee"],
     ["Account & TIN verification", "Account-ownership service", "who owns the account · TIN check", "per payment", "bank"],
     ["Returns & reclamations", "ACH returns · bank reclamation responses", "closed accounts · non-receipt · account details", "daily", "bank"],
     ["Direct-deposit change logs", "SSA · OPM · VA", "who changed the account, how, from which phone", "daily · data-sharing agreements", "agency"],
@@ -90,7 +90,7 @@
         '</div>' +
         '<div style="font-size:10.5px;color:var(--text3);margin:10px 0 6px"><i class="ti ti-checklist"></i> The checks every payment already gets</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' + checks + '</div></div>' +
-        '<div class="card" style="padding:0;overflow:hidden"><div style="padding:9px 12px;border-bottom:0.5px solid var(--border2);font-weight:500;font-size:12.5px"><i class="ti ti-database" style="color:var(--accent-d)"></i> Data sources <span class="muted" style="font-weight:400;font-size:10.5px">· what joins the payments</span></div>' +
+        '<div class="card" style="padding:0;overflow:hidden"><div style="padding:9px 12px;border-bottom:0.5px solid var(--border2);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div style="font-weight:500;font-size:12.5px"><i class="ti ti-database" style="color:var(--accent-d)"></i> Data sources <span class="muted" style="font-weight:400;font-size:10.5px">· what joins the payments · every piece of evidence is tagged with its lane</span></div>' + T.laneLegend() + '</div>' +
         '<table><thead><tr><th>Source</th><th>Cadence</th><th>Where it sits</th></tr></thead><tbody>' + srcRows + '</tbody></table></div>' +
         '<div style="font-size:10.5px;color:var(--text3);margin-top:8px"><i class="ti ti-info-circle"></i> Treasury reports that payment verification screened more than 1.1 billion payments (about $3.7 trillion) in FY2026 and returned about 13,500 payments ($175 million) that would have gone to deceased individuals (Treasury, Oct 6, 2026). Other figures in this demo are synthetic.</div>' +
         '</div>';

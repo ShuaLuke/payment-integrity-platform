@@ -20,7 +20,7 @@
     render: function (mount, params) {
       var id = params.id || window.APP.state.allegationId, l = T.get(id);
       if (!l) { mount.innerHTML = '<div class="page"><p>Payment not found.</p></div>'; return; }
-      var h = T.handoff(id), stage = l.mode === "prepay" ? "prepay" : "post";
+      var h = T.handoff(id), stage = l.mode === "prepay" ? "prepay" : "post", ready = T.packageReady(l), finding = T.findingFor(id);
       var d = draft[id] || (draft[id] = { rec: params.rec || T.defaultRec(l), note: null });
       if (params.rec && !h) d.rec = params.rec;
       var rec = h ? h.rec : d.rec, reason = h ? h.reason : reasonFor(l, rec);
@@ -38,8 +38,9 @@
         '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">' +
         '<div style="flex:1.25;min-width:360px">' + human(l, h, stage, rec, reason, note) + '</div>' +
         '<div style="flex:1;min-width:320px">' + machine(l, payload) + '</div></div>' +
-        (h ? sentCard(l, h) : '<div class="card" style="display:flex;align-items:center;gap:10px;margin-top:12px"><i class="ti ti-info-circle" style="color:var(--accent-d)"></i><div style="flex:1;font-size:12px;color:var(--text2)">Sending shares only the fields on the right. ' + l.agency + ' gets the readable view and the structured data together.</div>' +
-          '<button class="btn primary" id="ho-send"><i class="ti ti-send"></i> Send to ' + l.agency + '</button></div>') +
+        (h ? sentCard(l, h) : ready ? '<div class="card" style="display:flex;align-items:center;gap:10px;margin-top:12px"><i class="ti ti-info-circle" style="color:var(--accent-d)"></i><div style="flex:1;font-size:12px;color:var(--text2)">Sending shares only the fields on the right. ' + l.agency + ' gets the readable view and the structured data together.</div>' +
+          '<button class="btn primary" id="ho-send"><i class="ti ti-send"></i> Send to ' + l.agency + '</button></div>'
+          : '<div class="card" style="display:flex;align-items:center;gap:10px;margin-top:12px;border-color:var(--med)"><i class="ti ti-clock" style="color:var(--med-tx);font-size:20px"></i><div style="flex:1;font-size:12px;color:var(--text2)"><b style="color:var(--ink)">Not sent yet.</b> ' + (finding ? 'The finding (' + esc(T.FINDING[finding.outcome]) + ') is with the supervisor. The package goes out once it\'s approved.' : 'Record Treasury\'s finding on the payment first; a supervisor approves it, then this package goes to ' + l.agency + '.') + '</div><button class="btn" id="ho-record2"><i class="ti ti-file-text"></i> Back to the payment</button></div>') +
         '</div>';
 
       document.getElementById("ho-back").onclick = function () { window.APP.goBack(); };
@@ -47,7 +48,8 @@
       var portal = document.getElementById("ho-portal"); if (portal) portal.onclick = function () { window.APP.openAgencyPortal(l.agency, id); };
       var win = document.getElementById("ho-window"); if (win) win.onclick = function () { window.APP.openAgencyWindow(l.agency); };
       var back = document.getElementById("ho-record"); if (back) back.onclick = function () { window.APP.openAllegation(id); };
-      if (h) return;
+      var back2 = document.getElementById("ho-record2"); if (back2) back2.onclick = function () { window.APP.openAllegation(id); };
+      if (h || !ready) return;
       mount.querySelectorAll("input[name=ho-rec]").forEach(function (r) { r.onchange = function () { d.rec = r.value; d.note = noteVal(); window.Views.handoff.render(mount, { id: id }); }; });
       document.getElementById("ho-note").oninput = function () { d.note = noteVal(); };
       document.getElementById("ho-reason").onchange = function () { d.reason = this.value; refreshJson(l, d); };
@@ -102,7 +104,7 @@
     }).join("");
     var reasons = reasonsFor(l, rec).map(function (r) { return '<option value="' + r.c + '"' + (r.c === reason ? " selected" : "") + '>' + r.c + ' · ' + esc(r.t) + '</option>'; }).join("");
     var ev = (l.signals || []).filter(function (s) { return s.sev !== "low"; }).map(function (s) {
-      return '<div style="display:flex;gap:9px;padding:6px 0;border-top:0.5px solid var(--border2)"><span style="width:7px;height:7px;border-radius:50%;flex:none;margin-top:6px;background:' + (s.sev === "high" ? "var(--high)" : "var(--med)") + '"></span><div style="flex:1;font-size:12px"><b style="font-weight:500">' + esc(s.label) + '.</b> <span style="color:var(--text2)">' + esc(s.detail) + '</span></div><span class="tag" style="font-size:9.5px;align-self:flex-start;white-space:nowrap">' + esc(s.src) + '</span></div>';
+      return '<div style="display:flex;gap:9px;padding:6px 0;border-top:0.5px solid var(--border2)"><span style="width:7px;height:7px;border-radius:50%;flex:none;margin-top:6px;background:' + (s.sev === "high" ? "var(--high)" : "var(--med)") + '"></span><div style="flex:1;font-size:12px"><b style="font-weight:500">' + esc(s.label) + '.</b> <span style="color:var(--text2)">' + esc(s.detail) + '</span></div><span style="align-self:flex-start">' + T.laneTag(s.lane, s.src, true) + '</span></div>';
     }).join("");
     var tl = T.tlFor(l.id).filter(function (f) { return f.st !== "pass"; });
     var net = l.network ? T.net(l.network) : null;

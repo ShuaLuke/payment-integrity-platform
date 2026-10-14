@@ -78,7 +78,8 @@
   function detail(agency, h) {
     var l = T.get(h.id), stage = l.mode === "prepay" ? "prepay" : "post";
     var p = pick[h.id] || (pick[h.id] = { c: stage === "prepay" ? (h.rec === "release" ? "release" : "stop") : (h.rec === "none" ? "none" : "reclaim") });
-    var ev = h.payload.evidence.map(function (e) { return '<div style="display:flex;gap:9px;padding:6px 0;border-top:0.5px solid var(--border2);font-size:12px"><i class="ti ti-point-filled" style="color:var(--high)"></i><span style="flex:1">' + esc(e.finding) + '</span><span class="tag" style="font-size:9.5px">' + esc(e.source) + '</span></div>'; }).join("");
+    var laneKey = function (t) { var k = T.LANE_ORDER.filter(function (x) { return T.LANES[x].t === t; })[0]; return k || "treas"; };
+    var ev = h.payload.evidence.map(function (e) { return '<div style="display:flex;gap:9px;padding:6px 0;border-top:0.5px solid var(--border2);font-size:12px"><i class="ti ti-point-filled" style="color:var(--high)"></i><span style="flex:1">' + esc(e.finding) + '</span>' + T.laneTag(laneKey(e.lane), e.source, true) + '</div>'; }).join("");
     var tl = T.tlFor(h.id).filter(function (f) { return f.st !== "pass"; });
     var dec = h.decision ? T.agencyDecision(l, h.decision.c) : null;
     var decide = dec ? '<div class="card" style="margin:0;border-color:' + TONE[dec.tone][0] + '"><div style="display:flex;gap:10px;align-items:center"><i class="ti ti-circle-check" style="font-size:24px;color:var(--low)"></i><div><div style="font-weight:600;font-size:13.5px">Decision sent to Treasury: ' + esc(dec.t) + '</div><div style="font-size:11.5px;color:var(--text2);margin-top:2px">' + esc(T.agencyReasonLabel(h.decision.reason)) + ' · ' + window.APP.fmtTs(h.decision.ts) + '</div></div></div>' +

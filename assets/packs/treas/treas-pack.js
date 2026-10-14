@@ -97,7 +97,20 @@
     info: [{ c: "AG-I1", t: "Send the bank's account-opening records" }, { c: "AG-I2", t: "Send the linked payments" }]
   };
   var stage = function (l) { return l.mode === "prepay" ? "prepay" : "post"; };
-  T.defaultRec = function (l) { return { hold: "hold", deny: "stop", pay: "release", confirm: "reclaim", escalate: "refer", dismiss: "none" }[l.recommendedAction] || "hold"; };
+  T.defaultRec = function (l) {
+    var d = l.mode !== "prepay" && APP.state.decisions[l.id];
+    return { hold: "hold", deny: "stop", pay: "release", confirm: "reclaim", escalate: "refer", dismiss: "none" }[d ? d.outcome : l.recommendedAction] || "hold";
+  };
+  // post-payment: the package to the agency needs an approved finding behind it
+  T.findingFor = function (id) { return APP.state.decisions[id] || null; };
+  T.packageReady = function (l) { if (l.mode === "prepay") return true; var d = T.findingFor(l.id); return !!(d && d.reviewState === "approved"); };
+  T.FINDING = { confirm: "Improper", dismiss: "Proper", escalate: "Needs investigation" };
+  var baseSup = APP.supervisorAction;
+  APP.supervisorAction = function (id, action, note) {
+    baseSup(id, action, note);
+    var l = isT(id) && T.lead(id), d = T.findingFor(id);
+    if (l && action === "approve" && d && d.outcome !== "dismiss") APP.auditLog("RECOMMENDATION_READY", "Payment " + id + " · finding approved · recommendation to " + T.AGENCIES[l.agency].name + " can be sent: " + T.recLabel(l, T.defaultRec(l)));
+  };
   T.recLabel = function (l, c) { var r = T.REC_ACTIONS[stage(l)].filter(function (x) { return x.c === c; })[0]; return r ? r.t : c; };
   T.agencyDecision = function (l, c) { return T.AGENCY_DECISIONS[stage(l)].filter(function (x) { return x.c === c; })[0] || null; };
   T.agencyReasonLabel = function (c) { var all = []; Object.keys(T.AGENCY_REASONS).forEach(function (k) { all = all.concat(T.AGENCY_REASONS[k]); }); var r = all.filter(function (x) { return x.c === c; })[0]; return r ? r.c + " · " + r.t : c; };
@@ -115,7 +128,7 @@
       payee: { name: l.payee, account: l.bank + " " + l.acct },
       recommendation: { action: rec, reasonCode: reason },
       riskScore: l.riskScore,
-      evidence: (l.signals || []).filter(function (s) { return s.sev !== "low"; }).map(function (s) { return { finding: s.label, source: s.src }; }),
+      evidence: (l.signals || []).filter(function (s) { return s.sev !== "low"; }).map(function (s) { return { finding: s.label, lane: T.LANES[s.lane] ? T.LANES[s.lane].t : s.lane, source: s.src }; }),
       network: n ? { id: n.id, payees: n.payees, agencies: n.agencies } : null,
       respondBy: APP.fmtDate(due)
     };
@@ -227,7 +240,7 @@
   var N01 = function () { return T.net("N01"); };
   function inRing(a) { return a.network === "N01"; }
   var baseSummary = AI.adjudicationSummary, baseAgents = AI.agentReports, baseCopilot = AI.copilot, baseLetter = AI.correspondence, baseKb = AI.knowledgeBase;
-  var REC_LABEL = { hold: "Refer to the agency · recommend hold", deny: "Refer to the agency · recommend stop", pay: "Pay", confirm: "Reclaim · recover", dismiss: "Clear — payment stands", escalate: "Refer" };
+  var REC_LABEL = { hold: "Refer to the agency · recommend hold", deny: "Refer to the agency · recommend stop", pay: "Pay", confirm: "Improper · recommend reclaim", dismiss: "Proper · payment stands", escalate: "Needs investigation · recommend referral" };
   function recRationale(a) {
     if (a.id === T.SEED) return "Every list check passed, and that's the point: the identity is real and the account is in that name. What doesn't fit is everything around the payment. The account is 19 days old and one of 34 opened in a batch, the mailbox is shared with 29 other federal payees, and the W-2 comes from an employer with no real payroll. Recommend that IRS hold it and verify the taxpayer: a hold costs a legitimate taxpayer a few days, while paying sends $18,940 to an account that will be empty within hours. If IRS verifies the taxpayer, the refund releases.";
     if (a.id === T.THREAD) return "Already paid, to an account in the same batch and the same mailbox as PV-73194, and the real taxpayer has filed her own return. Ask the bank to return what's left (reclamation), tell IRS so the real taxpayer's refund isn't delayed, and attach it to the Delmont case.";
@@ -352,10 +365,19 @@
   }
   // inside the agency's system, Treasury's controls step out of the way (the logo returns)
   var st = document.createElement("style");
+  // where a piece of evidence came from: one of six lanes, same look everywhere
+  T.laneTag = function (lane, src, small) {
+    var L = T.LANES[lane] || T.LANES.treas;
+    return '<span class="lane lane-' + L.k + '" title="' + APP.esc(L.d) + '" style="--lc:' + L.c + ';--lb:' + L.bg + (small ? ';font-size:9.5px' : '') + '"><i class="ti ti-' + L.icon + '"></i>' + L.t + (src ? '<span class="lane-src">' + APP.esc(src) + '</span>' : '') + '</span>';
+  };
+  T.laneLegend = function () {
+    return '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">' + T.LANE_ORDER.map(function (k) { return T.laneTag(k, null, true); }).join("") + '</div>';
+  };
   // TrackLight's mark wherever its data shows (a styled wordmark until the team has logo assets)
   T.tlMark = function (txt) { return '<span class="tl-mark"><i class="ti ti-radar-2"></i>TrackLight' + (txt ? '<span class="tl-sub">' + txt + '</span>' : '') + '</span>'; };
   // room under every screen so the floating Investigative Assistant button never covers its last row
-  st.textContent = "#view{padding-bottom:84px}.tl-mark{display:inline-flex;align-items:center;gap:4px;font-weight:700;letter-spacing:-.01em;color:#0e5a63;background:#e3f6f4;border:0.5px solid #9fd9d2;border-radius:5px;padding:1px 7px 1px 6px;font-size:11px;white-space:nowrap}.tl-mark .tl-sub{font-weight:500;color:#2f6d73;margin-left:3px}" +
+  st.textContent = ".lane{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--lc);background:var(--lb);border:0.5px solid var(--lc);border-radius:5px;padding:1px 6px 1px 5px;white-space:nowrap;line-height:1.5}.lane .ti{font-size:11px}.lane-src{font-weight:400;color:var(--lc);opacity:.85;margin-left:2px;padding-left:5px;border-left:0.5px solid var(--lc)}" +
+    "#view{padding-bottom:84px}.tl-mark{display:inline-flex;align-items:center;gap:4px;font-weight:700;letter-spacing:-.01em;color:#0e5a63;background:#e3f6f4;border:0.5px solid #9fd9d2;border-radius:5px;padding:1px 7px 1px 6px;font-size:11px;white-space:nowrap}.tl-mark .tl-sub{font-weight:500;color:#2f6d73;margin-left:3px}" +
     "body[data-sys=agency] .navitems,body[data-sys=agency] #mode-toggle,body[data-sys=agency] #reset-demo,body[data-sys=agency] .conn,body[data-sys=agency] #role-switch,body[data-sys=agency] #prog-switch,body[data-sys=agency] .brand-name,body[data-sys=agency] #cp-fab,body[data-sys=agency] #cp-panel{visibility:hidden}";
   document.head.appendChild(st);
   var baseNav = APP.nav;

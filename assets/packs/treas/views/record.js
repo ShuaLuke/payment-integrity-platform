@@ -31,7 +31,7 @@
         '<span class="mono" style="font-size:11px;color:var(--text2)">' + a.agency + ' · ' + esc(a.prog.name) + '</span>' +
         '<span style="flex:1"></span><button class="btn" id="r-send" style="font-size:12px"><i class="ti ti-' + (T.handoff(id) ? "package" : "send") + '"></i> ' + (T.handoff(id) ? "View package" : "Send to " + a.agency) + '</button>' +
         '<button class="btn primary" id="r-sum" style="font-size:12px"><i class="ti ti-file-analytics"></i> Summarize for adjudication</button></div>' +
-        handoffBanner(a) +
+        inboundBanner(a) + handoffBanner(a) +
         (a.network === "N01" ? threadBanner(a) : "") +
         '<div class="split" style="display:flex;gap:12px;align-items:flex-start">' +
         '<div class="rail" style="width:210px;flex:none;display:flex;flex-direction:column;gap:10px">' + rail(a) + '</div>' +
@@ -52,6 +52,18 @@
       if (seg) setTimeout(function () { var el = document.querySelector('.seg[data-d="' + seg + '"]'); if (el) el.click(); }, 60);
     }
   };
+
+  // the flag an agency sent about this payment, and what Treasury matched it to
+  function inboundBanner(a) {
+    var s = T.signalOn(a.id); if (!s) return "";
+    var L = s.clear ? { c: "var(--low-tx)", bg: "var(--low-bg)" } : { c: T.LANES.flag.c, bg: T.LANES.flag.bg };
+    return '<div style="display:flex;align-items:flex-start;gap:12px;background:' + L.bg + ';border:0.5px solid ' + L.c + ';border-radius:9px;padding:9px 14px;margin-bottom:12px">' +
+      '<i class="ti ti-inbox" style="font-size:20px;color:' + L.c + ';margin-top:1px"></i>' +
+      '<div style="flex:1;font-size:12.5px;line-height:1.45;color:var(--ink)"><b style="color:' + L.c + '">' + (s.clear ? s.agency + ' confirmed this change' : 'Flagged by ' + esc(T.AGENCIES[s.agency].name)) + '</b> · received ' + esc(s.received) + ' · <span class="mono" style="font-size:11px">' + s.id + '</span> · ' + esc(s.kind) +
+      '<div style="margin-top:2px">' + esc(s.detail) + '</div>' +
+      (s.matched.length ? '<div style="margin-top:2px;color:' + L.c + '"><i class="ti ti-link"></i> <b>Treasury matched it:</b> ' + esc(s.match) + '</div>' : '') + '</div>' +
+      '<span style="white-space:nowrap">' + T.laneTag("flag", T.SCHEMA.name.replace(/ \(.*$/, ""), true) + '</span></div>';
+  }
 
   // what the certifying agency did with Treasury's recommendation
   function handoffBanner(a) {
@@ -113,7 +125,7 @@
   var TABS = [["overview", "Overview"], ["checks", "Checks"], ["documents", "Address"], ["procurement", "Account"], ["links", "Links"], ["history", "History"], ["decision", "Decision"]];
   function tabBar(undecided) {
     return '<div style="display:flex;flex-wrap:wrap;gap:2px;border-bottom:0.5px solid var(--border);margin-bottom:10px">' + TABS.map(function (t) {
-      return '<button class="ctab' + (t[0] === curTab ? " active" : "") + '" data-tab="' + t[0] + '">' + t[1] + (t[0] === "decision" && undecided ? ' <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);vertical-align:middle;margin-left:2px"></span>' : "") + '</button>';
+      return '<button class="ctab' + (t[0] === curTab ? " active" : "") + '" data-tab="' + t[0] + '">' + (t[0] === "decision" && ctx && ctx.a.mode !== "prepay" ? "Finding" : t[1]) + (t[0] === "decision" && undecided ? ' <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);vertical-align:middle;margin-left:2px"></span>' : "") + '</button>';
     }).join("") + '</div>';
   }
   function show(name) {
@@ -134,14 +146,14 @@
       var c = SEV[s.sev] || SEV.low;
       return '<div style="display:flex;gap:10px;padding:9px 0;border-top:0.5px solid var(--border2)"><span style="width:8px;height:8px;border-radius:50%;background:' + c[2] + ';flex:none;margin-top:5px"></span>' +
         '<div style="flex:1"><div style="font-weight:500;font-size:12.5px">' + esc(s.label) + '</div><div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:1px">' + esc(s.detail) + '</div></div>' +
-        '<span class="tag" style="font-size:10px;align-self:flex-start;white-space:nowrap">' + esc(s.src) + '</span></div>';
+        '<span style="align-self:flex-start">' + T.laneTag(s.lane, s.src) + '</span></div>';
     }).join("");
     return '<div style="display:flex;gap:12px;flex-wrap:wrap">' +
       '<div class="card" style="flex:2;min-width:340px;margin:0"><div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
       '<div style="width:54px;height:54px;border-radius:50%;border:5px solid ' + (a.riskScore >= 80 ? "var(--high)" : a.riskScore >= 50 ? "var(--med)" : "var(--low)") + ';display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px">' + a.riskScore + '</div>' +
       '<div style="flex:1"><div style="font-weight:600;font-size:13.5px"><i class="ti ti-sparkles" style="color:var(--accent-d)"></i> Why this was flagged</div><div style="font-size:12px;color:var(--text2);margin-top:2px">' + esc(a.reason) + '.</div>' +
       '<div style="font-size:11px;color:var(--text3);margin-top:3px">Rules + ML/AI + TrackLight · confidence ' + Math.round(a.confidence * 100) + '% · scored during payment verification, before disbursement · alert threshold ' + T.ALERT + '</div></div></div>' +
-      factors(a) + sig + '</div>' +
+      factors(a) + sig + '<div style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border2);display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:10.5px;color:var(--text3)">Where it comes from</span>' + T.laneLegend() + '</div></div>' +
       '<div style="flex:1;min-width:230px;display:flex;flex-direction:column;gap:12px">' +
       '<div class="card" style="margin:0;background:' + rec[2] + ';border-color:transparent"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:' + rec[1] + '">Model recommends</div><div style="font-weight:600;font-size:15px;color:' + rec[1] + ';margin-top:3px"><i class="ti ti-' + rec[3] + '"></i> ' + rec[0] + '</div>' +
       '<button class="btn" id="r-explain" style="margin-top:9px;font-size:11.5px;background:#fff"><i class="ti ti-sparkles"></i> Explain in full</button></div>' +
@@ -171,7 +183,7 @@
   // flags other agencies shared that Treasury matched to this payment
   function agencyFlags(a) {
     var S = T.signalsFor(a.id); if (!S.length) return "";
-    return '<div class="card" style="margin:0"><div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px"><i class="ti ti-share"></i> Agency flags matched</div>' +
+    return '<div class="card" style="margin:0;border-color:' + T.LANES.flag.c + '"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em"><i class="ti ti-inbox" style="color:' + T.LANES.flag.c + '"></i> Agency flags matched to this payment</div>' + T.laneTag("flag", null, true) + '</div>' +
       S.map(function (s) {
         var own = s.payment === a.id;
         return '<div style="padding:6px 0;border-top:0.5px solid var(--border2);font-size:11.5px;line-height:1.45"><div><span class="tag" style="font-size:9.5px">' + s.agency + '</span> <b style="font-weight:500">' + esc(s.kind) + '</b> <span class="muted" style="font-size:10.5px">· ' + esc(s.received.slice(0, 10)) + '</span></div>' +
@@ -205,17 +217,18 @@
       var hit = g.k === "death" && t === "Deceased payee";
       return row(hit ? "fail" : "pass", g.t, hit ? "Payee deceased 2026-08-30 (SSA Numident)" : "No match", g.src);
     }).join("") + row(t === "Vendor bank change" ? "fail" : "pass", "Account ownership", t === "Vendor bank change" ? "Account belongs to a different business" : "In the payee's name", "Account verification") + row("pass", "TIN", "Valid and matches the payee", "TIN verification");
-    var tl = T.tlFor(a.id), hits = tl.filter(function (f) { return f.st !== "pass"; }).length;
-    var tlRows = tl.map(function (f) { return row(f.st, f.t, f.text, f.src); }).join("");
+    var tl = T.tlFor(a.id), found = tl.filter(function (f) { return f.st !== "pass"; }), quiet = tl.filter(function (f) { return f.st === "pass"; }), hits = found.length;
+    var byGroup = function (list) { return T.TL_GROUPS.map(function (g) { var rs = list.filter(function (f) { return f.g === g[0]; }); return rs.length ? '<div style="font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text3);margin:8px 0 -3px">' + g[0] + ' <span style="font-weight:400;text-transform:none;letter-spacing:0">· ' + g[1] + '</span></div>' + rs.map(function (f) { return row(f.st, f.t, f.text, f.src); }).join("") : ""; }).join(""); };
+    var tlRows = byGroup(found) + (quiet.length ? '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11.5px;color:var(--text2);padding:4px 0"><i class="ti ti-circle-check" style="color:var(--low)"></i> ' + quiet.length + ' checks with no adverse findings · ' + T.TL_CATS.length + ' in all</summary>' + byGroup(quiet) + '</details>' : '');
     var col = function (icon, title, sub, badge, body, tone) {
       return '<div style="flex:1;min-width:300px;border:0.5px solid var(--border);border-radius:9px;overflow:hidden"><div style="padding:9px 12px;background:' + tone + ';display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-weight:600;font-size:12.5px"><i class="ti ti-' + icon + '"></i> ' + title + '</div><div style="font-size:10.5px;color:var(--text2)">' + sub + '</div></div>' + badge + '</div><div style="padding:2px 12px 6px">' + body + '</div></div>';
     };
     var dnpOk = t !== "Deceased payee" && t !== "Vendor bank change";
     return '<div class="card" style="margin:0"><div style="display:flex;gap:10px;flex-wrap:wrap">' +
-      col("shield-check", "Do Not Pay", "Run on every payment today", '<span class="pill" style="background:' + (dnpOk ? "var(--low-bg);color:var(--low-tx)" : "var(--high-bg);color:var(--high-tx)") + '">' + (dnpOk ? "All passed" : "Match") + '</span>', dnp, "var(--surface)") +
+      col("shield-check", "Today's checks", "Do Not Pay, account ownership and TIN · run on every payment", '<span class="pill" style="background:' + (dnpOk ? "var(--low-bg);color:var(--low-tx)" : "var(--high-bg);color:var(--high-tx)") + '">' + (dnpOk ? "All passed" : "Match") + '</span>', dnp, "var(--surface)") +
       col("radar-2", T.tlMark("due diligence"), "What TrackLight adds beyond Do Not Pay", '<span class="pill" style="background:' + (hits ? "var(--high-bg);color:var(--high-tx)" : "var(--low-bg);color:var(--low-tx)") + '">' + (hits ? hits + " finding" + (hits > 1 ? "s" : "") : "No findings") + '</span>', tlRows, hits ? "var(--high-bg)" : "var(--surface)") +
       '</div>' +
-      (dnpOk && hits ? '<div style="margin-top:10px;font-size:12px;line-height:1.5;padding:9px 11px;border-radius:8px;background:var(--accent-l);color:var(--ink)"><i class="ti ti-info-circle" style="color:var(--accent-d)"></i> Every Do Not Pay check passed. TrackLight looks past the lists: who the payee really is, who stands behind the employer, and what\'s on record about them.</div>' : '') +
+      (dnpOk && hits ? '<div style="margin-top:10px;font-size:12px;line-height:1.5;padding:9px 11px;border-radius:8px;background:var(--accent-l);color:var(--ink)"><i class="ti ti-info-circle" style="color:var(--accent-d)"></i> Every check Treasury runs today passed: Do Not Pay asks whether a payee is on a list. TrackLight asks who the payee really is, who stands behind the employer, and what\'s on record about them.</div>' : '') +
       '<div style="font-weight:500;font-size:13px;margin:14px 0 8px"><i class="ti ti-affiliate" style="color:var(--accent-d)"></i> Pattern checks <span class="muted" style="font-weight:400;font-size:11px">· this payment against every other payment, across agencies</span></div>' + grid(P) +
       (allPass && anyFail ? '<div style="margin-top:12px;font-size:12px;line-height:1.5;padding:9px 11px;border-radius:8px;background:var(--accent-l);color:var(--ink)"><i class="ti ti-info-circle" style="color:var(--accent-d)"></i> It passed every list check: the identity is real and the account is in that name. The pattern checks look at what\'s around the payment, and that\'s where it fails.</div>' : '') + '</div>';
   }
@@ -323,26 +336,32 @@
           '<button class="seg r-pp" data-act="refer" style="flex:1;' + (refer ? "border-color:var(--accent);background:var(--accent-l)" : "") + '"><i class="ti ti-send"></i> Refer to ' + a.agency + (refer ? ' <span class="pill" style="background:var(--accent);color:#fff;font-size:9.5px">model</span>' : '') + '<div class="sub">recommend ' + esc(T.recLabel(a, T.defaultRec(a)).toLowerCase()) + ' · ' + a.agency + ' decides</div></button></div>') + '</div>';
     }
     var dec = window.APP.decisionFor(a.id);
-    if (dec) return agencyCard(a) + '<div class="card" style="margin:0"><div style="font-weight:500;font-size:13px;margin-bottom:6px">Decision recorded</div><div style="font-size:12.5px">' + esc({ confirm: "Reclaim · recover", dismiss: "Cleared — payment stands", escalate: "Referred" }[dec.outcome]) + ' · ' + esc(window.APP.reasonLabel(dec.outcome, dec.reason)) + '</div><div style="font-size:12px;color:var(--text2);margin-top:4px">' + (dec.reviewState === "pending" ? "Waiting for supervisor review (Karen Boyd)." : dec.reviewState === "approved" ? "Approved by the supervisor." : "") + '</div></div>';
-    return agencyCard(a) + '<div class="card" style="margin:0">' +
-      '<div style="font-weight:500;font-size:13px;margin-bottom:8px">Treasury\'s decision</div>' +
+    var intro = '<div style="font-size:11.5px;color:var(--text2);margin-bottom:10px">Treasury records what it found. A supervisor approves the finding, and the recommendation goes to ' + esc(T.AGENCIES[a.agency].name) + ', which decides on recovery. Only ' + a.agency + ' can act on the payment.</div>';
+    if (dec) return '<div class="card" style="margin:0 0 12px"><div style="font-weight:500;font-size:13px;margin-bottom:3px">Treasury\'s finding</div>' + intro + '<div style="font-size:12.5px"><b>' + esc(T.FINDING[dec.outcome]) + '</b> · ' + esc(window.APP.reasonLabel(dec.outcome, dec.reason)) + '</div><div style="font-size:12px;color:var(--text2);margin-top:4px">' + (dec.reviewState === "pending" ? '<i class="ti ti-clock"></i> With the supervisor (Karen Boyd) for approval.' : dec.reviewState === "approved" ? '<i class="ti ti-check" style="color:var(--low)"></i> Approved by the supervisor.' : dec.reviewState === "returned" ? '<i class="ti ti-arrow-back"></i> Returned by the supervisor' + (dec.returnNote ? ': ' + esc(dec.returnNote) : '.') : "") + '</div></div>' + agencyCard(a);
+    return '<div class="card" style="margin:0 0 12px">' +
+      '<div style="font-weight:500;font-size:13px;margin-bottom:3px">Treasury\'s finding</div>' + intro +
       '<div style="display:flex;gap:8px">' +
-      '<button class="seg" data-d="c">Reclaim<div class="sub">improper payment · recover from the bank</div></button>' +
-      '<button class="seg" data-d="d">Clear<div class="sub">payment proper · it stands</div></button>' +
-      '<button class="seg" data-d="e">Refer<div class="sub">to TIGTA / IRS-CI or the agency OIG</div></button></div>' +
+      '<button class="seg" data-d="c">Improper<div class="sub">recommend ' + a.agency + ' reclaim it from the bank</div></button>' +
+      '<button class="seg" data-d="d">Proper<div class="sub">the payment stands</div></button>' +
+      '<button class="seg" data-d="e">Needs investigation<div class="sub">recommend a referral to TIGTA / IRS-CI or the OIG</div></button></div>' +
       '<div id="r-dform" style="display:none;margin-top:12px">' +
       '<div style="font-size:11px;color:var(--text2);margin-bottom:3px">Reason</div><select id="r-reason" class="input"></select>' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0 3px"><span style="font-size:11px;color:var(--text2)">Justification</span><button class="btn" id="r-draft" style="font-size:11px;padding:3px 8px"><i class="ti ti-sparkles"></i> Draft with AI</button></div>' +
       '<textarea id="r-just" class="input" style="min-height:74px" placeholder="Why this decision…"></textarea>' +
       '<div id="r-case" style="margin-top:12px"></div>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn primary" id="r-submit"><i class="ti ti-send"></i> Submit to supervisor</button></div></div></div>';
+      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn primary" id="r-submit"><i class="ti ti-send"></i> Submit finding to supervisor</button></div></div></div>' + agencyCard(a);
   }
-  // post-payment: recovering the money is the agency's call too — send it a package
+  // post-payment: the recommendation to the agency follows the finding, once approved
   function agencyCard(a) {
-    var h = T.handoff(a.id);
-    return '<div class="card" style="margin:0 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><i class="ti ti-send" style="font-size:20px;color:var(--accent-d)"></i><div style="flex:1;min-width:220px"><div style="font-weight:500;font-size:13px">' + (h ? (h.decision ? esc(T.AGENCIES[a.agency].name) + ': ' + esc(T.agencyDecision(a, h.decision.c).t) : "Sent to " + esc(T.AGENCIES[a.agency].name) + " · awaiting its decision") : "Recommend an action to " + esc(T.AGENCIES[a.agency].name)) + '</div>' +
-      '<div style="font-size:11.5px;color:var(--text2)">' + (h ? 'Treasury recommends: ' + esc(T.recLabel(a, h.rec)) : a.agency + ' certified this payment and decides on recovery. Treasury shares what it found, with a recommendation.') + '</div></div>' +
-      '<button class="btn' + (h ? "" : " primary") + ' r-pkg"><i class="ti ti-' + (h ? "package" : "send") + '"></i> ' + (h ? "View package" : "Send to " + a.agency) + '</button></div>';
+    var h = T.handoff(a.id), d = T.findingFor(a.id), ag = esc(T.AGENCIES[a.agency].name);
+    var title, sub, btn = "", tone = "var(--border)";
+    if (h && h.decision) { title = ag + ': ' + esc(T.agencyDecision(a, h.decision.c).t); sub = 'Treasury recommended: ' + esc(T.recLabel(a, h.rec)); btn = '<button class="btn r-pkg"><i class="ti ti-package"></i> View package</button>'; tone = "var(--low-tx)"; }
+    else if (h) { title = 'Sent to ' + ag + ' · awaiting its decision'; sub = 'Treasury recommends: ' + esc(T.recLabel(a, h.rec)); btn = '<button class="btn r-pkg"><i class="ti ti-package"></i> View package</button>'; tone = "var(--accent)"; }
+    else if (!d) { title = 'Recommendation to ' + ag; sub = 'Drafts from the finding above. It goes out once a supervisor approves.'; }
+    else if (d.outcome === "dismiss") { title = 'No recommendation to ' + ag; sub = 'The payment is proper; nothing for ' + a.agency + ' to act on.'; }
+    else if (d.reviewState !== "approved") { title = 'Recommendation to ' + ag + ' · waiting on the supervisor'; sub = 'Will recommend: ' + esc(T.recLabel(a, T.defaultRec(a))) + '. Sent once the finding is approved.'; }
+    else { title = 'Finding approved · send ' + ag + ' the recommendation'; sub = 'Treasury recommends: ' + esc(T.recLabel(a, T.defaultRec(a))) + '. ' + a.agency + ' decides in its own system.'; btn = '<button class="btn primary r-pkg"><i class="ti ti-send"></i> Send to ' + a.agency + '</button>'; tone = "var(--accent)"; }
+    return '<div class="card" style="margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-color:' + tone + '"><i class="ti ti-send" style="font-size:20px;color:' + (btn ? "var(--accent-d)" : "var(--text3)") + '"></i><div style="flex:1;min-width:220px"><div style="font-weight:500;font-size:13px">' + title + '</div><div style="font-size:11.5px;color:var(--text2)">' + sub + '</div></div>' + btn + '</div>';
   }
   function caseBox(a, outcome) {
     if (outcome === "d") return "";
@@ -365,7 +384,7 @@
         var def = T.defaultReason(a, key);
         document.getElementById("r-reason").innerHTML = window.APP.REASONS[key].map(function (r) { return '<option value="' + r.c + '"' + (r.c === def ? " selected" : "") + '>' + r.c + ' · ' + esc(r.t) + '</option>'; }).join("");
         document.getElementById("r-case").innerHTML = caseBox(a, outcome);
-        document.getElementById("r-submit").innerHTML = outcome === "d" ? '<i class="ti ti-check"></i> Clear payment' : '<i class="ti ti-send"></i> Submit to supervisor';
+        document.getElementById("r-submit").innerHTML = outcome === "d" ? '<i class="ti ti-check"></i> Record as proper' : '<i class="ti ti-send"></i> Submit finding to supervisor';
         form.style.display = "block";
       };
     });

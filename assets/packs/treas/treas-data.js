@@ -99,88 +99,95 @@
       submitted: "2026-10-06 05:40", riskScore: 92, confidence: 0.91, recommendedAction: "hold", fwaType: "Stolen-identity refund", network: "N01", amount: 18940,
       reason: "Passed Do Not Pay, account and TIN checks · account opened 19 days ago in a batch of 34 · mailbox shared with 29 other payees · W-2 from an employer formed last year",
       signals: [
-        { sev: "high", label: "Account opened 19 days ago, in a batch", detail: "Brightpath Bank account ••6208 was opened 2026-09-17. 34 accounts with neighboring numbers (••6201–6248) were opened Sep 8–19, each in a different name, and 29 of them have already received federal payments.", src: "Treasury payment history" },
-        { sev: "high", label: "Mailbox shared with 29 other payees", detail: "2210 Mill Pointe Pkwy, Ste 114 · PMB 212, Carver Mill, GA is a private mailbox at a shipping store. In 13 months, 46 federal payments to 30 different payees used it: tax refunds, Social Security benefits and federal annuities.", src: "Agency payment files · USPS mailbox list" },
-        { sev: "high", label: "W-2 from an employer with no real payroll", detail: "The return's only W-2 is from Harlan Ridge Logistics LLC, formed 2025-11-04 at the same mailbox. Harlan Ridge issued 38 W-2s; the tax it reports withholding was never deposited.", src: "OpenCorporates · IRS return flag" },
-        { sev: "high", label: "The identity lives in Ohio, not Georgia", detail: "Marisol T. Avery has lived in Dayton, OH for 11 years, with no tie to Carver Mill, GA or to the employer on the W-2. Someone else is using her identity.", src: "TrackLight · PIPL" },
-        { sev: "med", label: "Refund 3.1× the peer median", detail: "Peer median refund for a single filer reporting $44,800 in wages: $6,100. This one is $18,940, almost all of it reported withholding.", src: "Peer comparison" },
-        { sev: "low", label: "Passed Do Not Pay", detail: "No match in the Death Master File, SSA's Numident, SAM.gov exclusions or the other Do Not Pay sources.", src: "Do Not Pay" },
-        { sev: "low", label: "Account ownership and TIN verified", detail: "The account is in Marisol T. Avery's name, and the TIN is valid and matches.", src: "Account & TIN verification" }
+        { sev: "high", label: "Account opened 19 days ago, in a batch", detail: "Brightpath Bank account ••6208 was opened 2026-09-17. 34 accounts with neighboring numbers (••6201–6248) were opened Sep 8–19, each in a different name, and 29 of them have already received federal payments.", src: "Treasury payment history", lane: "treas" },
+        { sev: "high", label: "Mailbox shared with 29 other payees", detail: "2210 Mill Pointe Pkwy, Ste 114 · PMB 212, Carver Mill, GA is a private mailbox at a shipping store. In 13 months, 46 federal payments to 30 different payees used it: tax refunds, Social Security benefits and federal annuities.", src: "Agency payment files · USPS mailbox list", lane: "treas" },
+        { sev: "high", label: "W-2 from an employer with no real payroll", detail: "The return's only W-2 is from Harlan Ridge Logistics LLC, formed 2025-11-04 at the same mailbox. Harlan Ridge issued 38 W-2s; the tax it reports withholding was never deposited.", src: "OpenCorporates · IRS return flag", lane: "irs" },
+        { sev: "high", label: "Mailbox flagged by SSA", detail: "On Oct 1, SSA flagged Gloria A. Pruitt: a phone call had moved her benefit to a new account and her mail to PMB 212. Treasury matched the flag to this mailbox, where the refund is going.", src: "SSA · SIG-SSA-0412", lane: "flag" },
+        { sev: "high", label: "The identity lives in Ohio, not Georgia", detail: "Marisol T. Avery has lived in Dayton, OH for 11 years, with no tie to Carver Mill, GA or to the employer on the W-2. Someone else is using her identity.", src: "TrackLight · PIPL", lane: "tl" },
+        { sev: "med", label: "Refund 3.1× the peer median", detail: "Peer median refund for a single filer reporting $44,800 in wages: $6,100. This one is $18,940, almost all of it reported withholding.", src: "Peer comparison", lane: "treas" },
+        { sev: "low", label: "Passed Do Not Pay", detail: "No match in any Do Not Pay source: death, debarment, debt, incarceration.", src: "Do Not Pay", lane: "dnp" },
+        { sev: "low", label: "Account ownership and TIN verified", detail: "The account is in Marisol T. Avery's name, and the TIN is valid and matches.", src: "Account & TIN verification", lane: "dnp" }
       ] },
     { id: "PV-73215", mode: "prepay", program: "REF", payeeName: "Owen P. Strickland", city: "Carver Mill, GA", address: MAILBOX.line, bank: "Corridor Financial", acct: "••0874", acctOpened: "2026-03-14", batch: "A5", schedule: "IRS refund schedule 26-1006-0447",
       submitted: "2026-10-06 05:40", riskScore: 88, confidence: 0.87, recommendedAction: "hold", fwaType: "Stolen-identity refund", network: "N01", amount: 17760,
       reason: "Same mailbox as PV-73194 · account in a batch of 31 · W-2 from Brookfane Staffing, formed last year",
       signals: [
-        { sev: "high", label: "Payee died on Sep 14", detail: "An obituary for Owen P. Strickland ran in Macon, GA on 2026-09-16. The death isn't in the Death Master File yet, so Do Not Pay passed.", src: "TrackLight · obituaries · OSINT" },
-        { sev: "high", label: "Same mailbox as PV-73194", detail: "Uses PMB 212 in Carver Mill, GA, shared by 30 federal payees.", src: "Agency payment files" },
-        { sev: "high", label: "W-2 from an employer with no real payroll", detail: "Brookfane Staffing LLC, formed 2025-11-19, same registered agent and mailbox as Harlan Ridge Logistics.", src: "OpenCorporates · IRS return flag" },
-        { sev: "low", label: "Passed Do Not Pay, account and TIN checks", detail: "No list matches; account in the payee's name.", src: "Do Not Pay · Account & TIN verification" }
+        { sev: "high", label: "Payee died on Sep 14", detail: "An obituary for Owen P. Strickland ran in Macon, GA on 2026-09-16. The death isn't in the Death Master File yet, so Do Not Pay passed.", src: "TrackLight · obituaries · OSINT", lane: "tl" },
+        { sev: "high", label: "Same mailbox as PV-73194", detail: "Uses PMB 212 in Carver Mill, GA, shared by 30 federal payees.", src: "Agency payment files", lane: "treas" },
+        { sev: "high", label: "W-2 from an employer with no real payroll", detail: "Brookfane Staffing LLC, formed 2025-11-19, same registered agent and mailbox as Harlan Ridge Logistics.", src: "OpenCorporates · IRS return flag", lane: "irs" },
+        { sev: "low", label: "Passed Do Not Pay, account and TIN checks", detail: "No list matches; account in the payee's name.", src: "Do Not Pay · Account & TIN verification", lane: "dnp" }
       ] },
     { id: "PV-73177", mode: "prepay", program: "VEN", payeeName: "Coastal Federal Supply Co.", city: "Norfolk, VA", address: "Remit-to on file since 2019", bank: "Harbor Pointe Bank", acct: "••4410", acctOpened: "2026-10-01", batch: null, schedule: "GSA vendor schedule 26-1006-0112",
       submitted: "2026-10-06 07:15", riskScore: 94, confidence: 0.93, recommendedAction: "deny", fwaType: "Vendor bank change", network: "N03", amount: 412800,
       reason: "Remit-to account changed 2 days before payment · account ownership doesn't match the vendor",
       signals: [
-        { sev: "high", label: "Account ownership doesn't match", detail: "The new account at Harbor Pointe Bank belongs to “CFS Holdings Group”, not Coastal Federal Supply Co.", src: "Account & TIN verification" },
-        { sev: "high", label: "Bank account changed 2 days ago", detail: "The vendor's remit-to account, unchanged since 2019, was changed on 2026-10-04 after an emailed request.", src: "Vendor master file" },
-        { sev: "med", label: "Same new bank as 3 other vendor changes", detail: "Three other vendors changed their accounts to Harbor Pointe Bank this month.", src: "Treasury payment history" }
+        { sev: "high", label: "Account ownership doesn't match", detail: "The new account at Harbor Pointe Bank belongs to “CFS Holdings Group”, not Coastal Federal Supply Co.", src: "Account & TIN verification", lane: "dnp" },
+        { sev: "high", label: "Bank account changed 2 days ago", detail: "The vendor's remit-to account, unchanged since 2019, was changed on 2026-10-04 after an emailed request.", src: "Vendor master file", lane: "file" },
+        { sev: "med", label: "Same new bank as 3 other vendor changes", detail: "Three other vendors changed their accounts to Harbor Pointe Bank this month.", src: "Treasury payment history", lane: "treas" }
       ] },
     { id: "PV-73151", mode: "prepay", program: "SSA", payeeName: "Ernest W. Dobbins", city: "Macon, GA", address: "On file", bank: "First Piedmont Bank", acct: "••1182", acctOpened: "2009-04-02", batch: null, schedule: "SSA benefit schedule 26-1006-2210",
       submitted: "2026-10-06 04:10", riskScore: 97, confidence: 0.98, recommendedAction: "deny", fwaType: "Deceased payee", network: null, amount: 2140,
       reason: "Payee died 2026-08-30 per SSA's Numident · caught by Do Not Pay",
-      signals: [{ sev: "high", label: "Payee deceased", detail: "SSA's Numident lists a date of death of 2026-08-30. The payment goes back to the agency.", src: "Do Not Pay · Numident" }] },
+      signals: [{ sev: "high", label: "Payee deceased", detail: "SSA's Numident lists a date of death of 2026-08-30. The payment goes back to the agency.", src: "Do Not Pay · Numident", lane: "dnp" }] },
     { id: "PV-73233", mode: "prepay", program: "VAB", payeeName: "Marcus D. Ellery", city: "Fayetteville, NC", address: "Address changed 2026-09-22", bank: "Navy Federal Credit Union", acct: "••7763", acctOpened: "2026-09-20", batch: null, schedule: "VA benefit schedule 26-1006-0381",
       submitted: "2026-10-06 04:55", riskScore: 41, confidence: 0.84, recommendedAction: "pay", fwaType: "New account · verified", network: null, amount: 1906,
       reason: "New account and address, changed through VA.gov with a verified sign-in · nothing shared with other payees",
       signals: [
-        { sev: "med", label: "New account and address", detail: "Account and address changed in September.", src: "Agency payment files" },
-        { sev: "low", label: "Change made by the veteran", detail: "Changed through VA.gov with a verified sign-in; the account is in the veteran's name and shared with no other payee.", src: "VA change log · Account verification" }
+        { sev: "med", label: "New account and address", detail: "Account and address changed in September.", src: "Agency payment files", lane: "file" },
+        { sev: "low", label: "VA says the veteran made the change", detail: "VA flagged the change itself: made through VA.gov with a verified sign-in. The account is in the veteran's name and shared with no other payee.", src: "VA · SIG-VA-0931", lane: "flag" }
       ] },
     { id: "PV-73226", mode: "prepay", program: "OPM", payeeName: "Patricia L. Gaines", city: "Columbia, SC", address: "On file", bank: "Palmetto State Credit Union", acct: "••5021", acctOpened: "2004-06-14", batch: null, schedule: "OPM annuity schedule 26-1006-0090",
       submitted: "2026-10-06 04:30", riskScore: 12, confidence: 0.95, recommendedAction: "pay", fwaType: "Routine", network: null, amount: 3120,
       reason: "Same account for 22 years · no changes · passed every check",
-      signals: [{ sev: "low", label: "Verified", detail: "Same account and address for years; passed Do Not Pay, account and TIN checks.", src: "Do Not Pay · Account verification" }] },
+      signals: [{ sev: "low", label: "Verified", detail: "Same account and address for years; passed Do Not Pay, account and TIN checks.", src: "Do Not Pay · Account verification", lane: "dnp" }] },
     { id: "PV-73240", mode: "prepay", program: "REF", payeeName: "Daniel R. Okoye", city: "Atlanta, GA", address: "On file", bank: "Regional Bank of Georgia", acct: "••9034", acctOpened: "2015-03-02", batch: null, schedule: "IRS refund schedule 26-1006-0451",
       submitted: "2026-10-06 05:45", riskScore: 8, confidence: 0.96, recommendedAction: "pay", fwaType: "Routine", network: null, amount: 2480,
       reason: "Long-held account · refund in line with peers · passed every check",
-      signals: [{ sev: "low", label: "Verified", detail: "Refund in line with reported wages; account held since 2015; passed every check.", src: "Do Not Pay · Account verification · Peer comparison" }] },
+      signals: [{ sev: "low", label: "Verified", detail: "Refund in line with reported wages; account held since 2015; passed every check.", src: "Do Not Pay · Account verification · Peer comparison", lane: "dnp" }] },
 
     // ---------------- post-payment: paid, flagged for review ----------------
     { id: "PV-71588", mode: "retrospective", program: "REF", payeeName: "Lena M. Whitcomb", city: "Carver Mill, GA", address: MAILBOX.line, bank: "Brightpath Bank", acct: "••6219", acctOpened: "2026-09-11", batch: "A1", schedule: "IRS refund schedule 26-0922-0318",
       submitted: "2026-09-22 05:40", paidDate: "2026-09-23", riskScore: 90, confidence: 0.9, recommendedAction: "confirm", fwaType: "Stolen-identity refund", network: "N01", amount: 17480, status: "Under review", assignee: "Dana Whitmore",
       reason: "Same mailbox and account batch as PV-73194 · already paid · the real Lena Whitcomb filed her own return in August",
       signals: [
-        { sev: "high", label: "Same mailbox and account batch as PV-73194", detail: "PMB 212 in Carver Mill, GA, and Brightpath Bank account ••6219, in the same batch of 34 as ••6208.", src: "Agency payment files · Treasury payment history" },
-        { sev: "high", label: "The real taxpayer filed separately", detail: "A second return under the same SSN, from the taxpayer's long-time Ohio address, was filed in August and is waiting on the duplicate.", src: "IRS return flag" },
-        { sev: "high", label: "W-2 from Harlan Ridge Logistics", detail: "Same employer as PV-73194: formed 2025-11-04 at the mailbox, no tax deposits behind its W-2s.", src: "OpenCorporates · IRS return flag" },
-        { sev: "low", label: "Passed Do Not Pay, account and TIN checks", detail: "Every list check passed when it was paid.", src: "Do Not Pay · Account & TIN verification" }
+        { sev: "high", label: "Same mailbox and account batch as PV-73194", detail: "PMB 212 in Carver Mill, GA, and Brightpath Bank account ••6219, in the same batch of 34 as ••6208.", src: "Agency payment files · Treasury payment history", lane: "treas" },
+        { sev: "high", label: "IRS flagged a duplicate return", detail: "On Oct 2, IRS flagged a second return under the same SSN, filed in August from the taxpayer's long-time Ohio address and waiting on this one.", src: "IRS · SIG-IRS-2207", lane: "flag" },
+        { sev: "high", label: "W-2 from Harlan Ridge Logistics", detail: "Same employer as PV-73194: formed 2025-11-04 at the mailbox, no tax deposits behind its W-2s.", src: "OpenCorporates · IRS return flag", lane: "irs" },
+        { sev: "low", label: "Passed Do Not Pay, account and TIN checks", detail: "Every list check passed when it was paid.", src: "Do Not Pay · Account & TIN verification", lane: "dnp" }
       ] },
     { id: "PV-72455", mode: "retrospective", program: "SSA", payeeName: "Gloria A. Pruitt", city: "Augusta, GA", address: MAILBOX.line, bank: "Lumen Direct", acct: "••3317", acctOpened: "2026-05-12", batch: "A3", schedule: "SSA benefit schedules · Jun–Sep 2026",
       submitted: "2026-06-03 04:10", paidDate: "2026-06-03 → 09-03", riskScore: 93, confidence: 0.92, recommendedAction: "confirm", fwaType: "Benefit redirection", network: "N01", amount: 7640, status: "Assigned", assignee: "Dana Whitmore",
       reason: "Direct deposit changed by phone to a network account · 4 payments redirected · beneficiary reported non-receipt",
       signals: [
-        { sev: "high", label: "Deposit redirected to a network account", detail: "On 2026-05-28 a phone call changed Ms. Pruitt's direct deposit from her credit union of 19 years to Lumen Direct ••3317, opened 16 days earlier in a batch of 38 (••3301–3349).", src: "SSA change log · Treasury payment history" },
-        { sev: "high", label: "Mailing address moved to the mailbox", detail: "The same call changed her mailing address to PMB 212, Carver Mill, GA, the mailbox behind the flagged refunds.", src: "Agency payment files" },
-        { sev: "high", label: "Beneficiary reported non-receipt", detail: "Ms. Pruitt reported the June–September payments missing on 2026-09-30.", src: "SSA non-receipt claim" },
-        { sev: "med", label: "Same phone on other changes", detail: "The calling number, (470) 555-0148, made 37 direct-deposit changes across SSA and OPM payees since April.", src: "SSA and OPM change logs" }
+        { sev: "high", label: "SSA flagged a deposit changed by phone", detail: "SSA raised it on Oct 1. On 2026-05-28 a phone call changed Ms. Pruitt's direct deposit from her credit union of 19 years to Lumen Direct ••3317, opened 16 days earlier in a batch of 38 (••3301–3349).", src: "SSA · SIG-SSA-0412", lane: "flag" },
+        { sev: "high", label: "Mailing address moved to the mailbox", detail: "The same call changed her mailing address to PMB 212, Carver Mill, GA, the mailbox behind the flagged refunds.", src: "Agency payment files", lane: "treas" },
+        { sev: "high", label: "Beneficiary reported non-receipt", detail: "Ms. Pruitt reported the June–September payments missing on 2026-09-30.", src: "SSA · SIG-SSA-0412", lane: "flag" },
+        { sev: "med", label: "Same phone on other changes", detail: "The calling number, (470) 555-0148, made 37 direct-deposit changes across SSA and OPM payees since April.", src: "SSA and OPM change logs", lane: "treas" }
       ] },
     { id: "PV-71522", mode: "retrospective", program: "REF", payeeName: "Terrence D. Okafor", city: "Carver Mill, GA", address: MAILBOX.line, bank: "Brightpath Bank", acct: "••6203", acctOpened: "2026-09-08", batch: "A1", schedule: "IRS refund schedule 26-0915-0207",
       submitted: "2026-09-15 05:40", paidDate: "2026-09-16", riskScore: 89, confidence: 0.88, recommendedAction: "confirm", fwaType: "Stolen-identity refund", network: "N01", amount: 16210, status: "New", assignee: null,
       reason: "Same mailbox and account batch · W-2 from Tallow Creek Services, formed last year",
-      signals: [{ sev: "high", label: "Same mailbox and account batch", detail: "PMB 212 and Brightpath Bank ••6203, first account in the batch.", src: "Agency payment files · Treasury payment history" }] },
+      signals: [
+        { sev: "high", label: "Same mailbox and account batch", detail: "PMB 212 and Brightpath Bank ••6203, first account in the batch.", src: "Agency payment files · Treasury payment history", lane: "treas" },
+        { sev: "high", label: "Payee in state custody", detail: "Georgia court records: Terrence D. Okafor was sentenced in January 2026 to four years and is in state custody. Do Not Pay checks federal prisons only.", src: "Enformion · UniCourt", lane: "tl" }
+      ] },
     { id: "PV-72488", mode: "retrospective", program: "OPM", payeeName: "Harold B. Severs", city: "Savannah, GA", address: MAILBOX.line, bank: "Corridor Financial", acct: "••2246", acctOpened: "2026-04-16", batch: "A6", schedule: "OPM annuity schedules · May–Aug 2026",
       submitted: "2026-05-01 04:30", paidDate: "2026-05-01 → 08-01", riskScore: 87, confidence: 0.86, recommendedAction: "confirm", fwaType: "Annuity redirection", network: "N01", amount: 9860, status: "New", assignee: null,
       reason: "Annuity redirected to a network account by a call from the same phone",
-      signals: [{ sev: "high", label: "Redirected by the network's phone", detail: "Direct deposit changed on 2026-04-24 from (470) 555-0148 to Corridor Financial ••2246.", src: "OPM change log" }] },
+      signals: [
+        { sev: "high", label: "OPM flagged a disputed change", detail: "OPM raised it on Sep 29: Mr. Severs says he never asked for the April change to his deposit account.", src: "OPM · SIG-OPM-0188", lane: "flag" },
+        { sev: "high", label: "Redirected by the network's phone", detail: "Direct deposit changed on 2026-04-24 from (470) 555-0148 to Corridor Financial ••2246, the number behind Gloria Pruitt's SSA change.", src: "OPM change log · SSA change log", lane: "treas" }
+      ] },
     { id: "PV-71390", mode: "retrospective", program: "VEN", payeeName: "Ridgeline Medical Products Inc.", city: "Columbus, OH", address: "Remit-to on file since 2017", bank: "Harbor Pointe Bank", acct: "••4398", acctOpened: "2026-08-19", batch: null, schedule: "VA vendor schedule 26-0826-0044",
       submitted: "2026-08-26 07:15", paidDate: "2026-08-27", riskScore: 85, confidence: 0.84, recommendedAction: "confirm", fwaType: "Vendor bank change", network: "N03", amount: 268000, status: "Assigned", assignee: "Maria Delgado",
       reason: "Paid to a new account set up after an emailed change request · the vendor says it never asked",
-      signals: [{ sev: "high", label: "Vendor didn't request the change", detail: "Ridgeline Medical Products reported non-payment; the emailed change came from a look-alike domain.", src: "Vendor master file · vendor report" }] },
+      signals: [{ sev: "high", label: "Vendor didn't request the change", detail: "Ridgeline Medical Products reported non-payment; the emailed change came from a look-alike domain.", src: "Vendor master file · vendor report", lane: "file" }] },
     { id: "PV-71733", mode: "retrospective", program: "SSA", payeeName: "38 beneficiaries · Harbor View Assisted Living", city: "Brunswick, GA", address: "1400 Harbor View Rd, Brunswick, GA", bank: "Various", acct: "—", acctOpened: "—", batch: null, schedule: "SSA benefit schedules",
       submitted: "2026-09-03 04:10", paidDate: "2026-09-03", riskScore: 56, confidence: 0.6, recommendedAction: "dismiss", fwaType: "Shared address", network: null, amount: 61900, status: "New", assignee: null,
       reason: "38 payees share one address — looks like a mailbox ring",
       signals: [
-        { sev: "med", label: "38 payees, one address", detail: "38 Social Security beneficiaries list the same street address.", src: "Agency payment files" },
-        { sev: "low", label: "The address is a licensed care facility", detail: "Harbor View Assisted Living is a licensed facility; the payees are long-time beneficiaries with their own accounts, and many use a representative payee on file with SSA.", src: "State facility license · SSA representative payee file" }
+        { sev: "med", label: "38 payees, one address", detail: "38 Social Security beneficiaries list the same street address.", src: "Agency payment files", lane: "treas" },
+        { sev: "low", label: "The address is a licensed care facility", detail: "Harbor View Assisted Living is a licensed facility; the payees are long-time beneficiaries with their own accounts, and many use a representative payee on file with SSA.", src: "State facility license · SSA representative payee file", lane: "file" }
       ] }
   ];
   LEADS.forEach(function (l) {
@@ -256,6 +263,17 @@
     ]
   };
 
+  // ---- where evidence comes from: six lanes, used everywhere evidence is shown ----
+  var LANES = {
+    file: { k: "file", t: "Agency file", icon: "file-certificate", c: "#4d5358", bg: "#f2f4f8", d: "What the certifying agency sent with the payment" },
+    flag: { k: "flag", t: "Agency flag", icon: "inbox", c: "#0e6027", bg: "#defbe6", d: "A flag an agency raised on its own payee and shared in the common schema" },
+    treas: { k: "treas", t: "Treasury history", icon: "building-bank", c: "#0043ce", bg: "#edf5ff", d: "Patterns across every payment Treasury disburses, for every agency" },
+    dnp: { k: "dnp", t: "Today's checks", icon: "shield-check", c: "#525252", bg: "#f4f4f4", d: "Do Not Pay, account ownership and TIN: run on every payment today" },
+    tl: { k: "tl", t: "TrackLight", icon: "radar-2", c: "#0e5a63", bg: "#e3f6f4", d: "Due diligence on who the payee and the businesses behind the payment really are" },
+    irs: { k: "irs", t: "IRS return flag", icon: "receipt-tax", c: "#6929c4", bg: "#f6f2ff", d: "Flags IRS attaches to a refund: the return itself stays with IRS (26 U.S.C. § 6103)" }
+  };
+  var LANE_ORDER = ["file", "flag", "treas", "dnp", "tl", "irs"];
+
   // ---- agency signals: flags agencies send Treasury in the shared format ----
   // Each agency sees only its own payees; Treasury matches the flag against every
   // agency's payments. `matched` = the payments Treasury tied it to.
@@ -285,46 +303,61 @@
   // ---- TrackLight due diligence: what it adds beyond Do Not Pay ----
   // Categories in display order, each with its data providers. Findings per payment
   // below; a category with no finding shows as a quiet "no adverse findings".
+  var TL_GROUPS = [["Identity", "Who the payee really is"], ["Business", "The businesses behind the payment"], ["Records", "Court, debt, property and media records"], ["Risk", "Watchlists"], ["Network", "Who they're connected to"]];
   var TL_CATS = [
-    { k: "deceased", t: "Deceased (verified + OSINT)", src: "LexisNexis · obituaries · OSINT" },
-    { k: "identity", t: "Identity & social links", src: "PIPL" },
-    { k: "owners", t: "Beneficial ownership", src: "OpenCorporates · LexisNexis" },
-    { k: "agents", t: "Registered agents", src: "OpenCorporates · LexisNexis" },
-    { k: "officers", t: "Executives & directors", src: "OpenCorporates · LexisNexis" },
-    { k: "financials", t: "Employees, contracts & financials", src: "OpenCorporates · USAspending" },
-    { k: "criminal", t: "Criminal & legal", src: "Enformion · UniCourt" },
-    { k: "liens", t: "Debts, liens & judgements", src: "Enformion · LexisNexis" },
-    { k: "news", t: "Negative news", src: "Adverse media search" },
-    { k: "network", t: "Network analysis", src: "TrackLight link analysis" },
-    { k: "watch", t: "Sanctions, PEPs, state-owned, narcotics", src: "Nomino Data" }
+    { k: "deceased", g: "Identity", t: "Deceased (verified + OSINT)", src: "LexisNexis · obituaries · OSINT · public records" },
+    { k: "social", g: "Identity", t: "Social media links", src: "PIPL" },
+    { k: "linkedin", g: "Identity", t: "Professional network", src: "LinkedIn" },
+    { k: "owners", g: "Business", t: "Beneficial ownership", src: "OpenCorporates · LexisNexis" },
+    { k: "agents", g: "Business", t: "Corporate agents", src: "OpenCorporates · LexisNexis" },
+    { k: "execs", g: "Business", t: "Company executives", src: "OpenCorporates · LexisNexis" },
+    { k: "directors", g: "Business", t: "Directors", src: "OpenCorporates · LexisNexis" },
+    { k: "nonprofit", g: "Business", t: "Non-profits", src: "IRS 990" },
+    { k: "procurement", g: "Business", t: "Procurement", src: "USAspending" },
+    { k: "audit", g: "Business", t: "Single audit filings", src: "Federal Audit Clearinghouse" },
+    { k: "criminal", g: "Records", t: "Criminal & legal", src: "Enformion · UniCourt" },
+    { k: "liens", g: "Records", t: "Debts, liens, judgements, evictions", src: "Enformion · LexisNexis" },
+    { k: "bankruptcy", g: "Records", t: "Bankruptcies", src: "Enformion · LexisNexis" },
+    { k: "assets", g: "Records", t: "Assets", src: "Enformion · LexisNexis" },
+    { k: "news", g: "Records", t: "Negative news", src: "Perplexity" },
+    { k: "russia", g: "Risk", t: "Russia or China risk", src: "Nomino Data" },
+    { k: "soe", g: "Risk", t: "State-owned entities", src: "Nomino Data" },
+    { k: "pep", g: "Risk", t: "Politically exposed persons", src: "Nomino Data" },
+    { k: "narcotics", g: "Risk", t: "Narcotics trafficking", src: "Nomino Data" },
+    { k: "network", g: "Network", t: "Network analysis", src: "TrackLight link analysis" }
   ];
   var DELMONT_TL = {
+    linkedin: ["fail", "LinkedIn lists R. T. Delmont as owner of Delmont Tax & Business Services, “maximum refunds, fast”: the preparer behind the returns."],
     agents: ["fail", "Sentinel Registered Agents LLC is the agent for all 8 W-2 employers, all registered at PMB 212."],
-    officers: ["fail", "R. T. Delmont is the listed officer on 6 of the 8 employers, and runs Delmont Tax & Business Services."],
+    execs: ["fail", "R. T. Delmont is the listed officer on 6 of the 8 employers, and runs Delmont Tax & Business Services."],
+    directors: ["warn", "No directors on file for any of the 8 employers."],
+    nonprofit: ["pass", "Not non-profits: no Form 990 expected"],
+    procurement: ["fail", "None of the 8 employers has a federal contract or award, yet they issued 300 W-2s."],
     criminal: ["warn", "Delmont Tax & Business Services: 2022 state consumer-protection judgment over client refunds it kept."],
     liens: ["warn", "Two state tax liens on Delmont Tax & Business Services (2023, 2024)."],
+    bankruptcy: ["warn", "R. T. Delmont: Chapter 7 bankruptcy, 2021 (discharged)."],
+    assets: ["warn", "PMB 212 is a mailbox at a shipping store, not a residence; no property in any payee's name there."],
     news: ["warn", "Local news, Mar 2025: clients say a Carver Mill tax preparer kept their refunds."],
     network: ["fail", "Tied to 385 other payees through account batches, the mailbox, the W-2 employers and one phone (Delmont network)."]
   };
   var TL = {
     "PV-73194": Object.assign({}, DELMONT_TL, {
-      identity: ["fail", "Marisol T. Avery has lived in Dayton, OH for 11 years, with no tie to Carver Mill, GA or to Harlan Ridge Logistics."],
-      owners: ["fail", "W-2 employer Harlan Ridge Logistics LLC, formed 2025-11-04 at PMB 212: no owner of record above 10%."],
-      financials: ["fail", "Harlan Ridge has no employees, contracts or financial filings on record, yet issued 38 W-2s."] }),
+      social: ["fail", "Marisol T. Avery has lived in Dayton, OH for 11 years, with no tie to Carver Mill, GA or to Harlan Ridge Logistics."],
+      owners: ["fail", "W-2 employer Harlan Ridge Logistics LLC, formed 2025-11-04 at PMB 212: no owner of record above 10%."] }),
     "PV-73215": Object.assign({}, DELMONT_TL, {
       deceased: ["fail", "Obituary published 2026-09-16 in Macon, GA: died 2026-09-14. Not yet in the Death Master File."],
       owners: ["fail", "W-2 employer Brookfane Staffing LLC, formed 2025-11-19 at PMB 212: no owner of record above 10%."] }),
     "PV-71588": Object.assign({}, DELMONT_TL, {
-      identity: ["fail", "Lena M. Whitcomb has lived in Toledo, OH for 14 years, with no tie to Carver Mill, GA."] }),
+      social: ["fail", "Lena M. Whitcomb has lived in Toledo, OH for 14 years, with no tie to Carver Mill, GA."] }),
     "PV-71522": Object.assign({}, DELMONT_TL, {
       criminal: ["fail", "Georgia court record: Terrence D. Okafor was sentenced in Jan 2026 to 4 years and is in state custody. Do Not Pay's incarceration check covers federal prisons only."] }),
     "PV-72455": {
-      identity: ["pass", "Gloria A. Pruitt has lived in Augusta, GA for 31 years; the mailbox isn't hers."],
+      social: ["pass", "Gloria A. Pruitt has lived in Augusta, GA for 31 years; the mailbox isn't hers"],
       network: ["fail", "The number that changed her deposit, (470) 555-0148, is listed for Delmont Tax & Business Services."] },
     "PV-72488": { network: ["fail", "Changed by (470) 555-0148, the Delmont network's phone."] },
     "PV-73177": {
       owners: ["fail", "The new account holder, CFS Holdings Group LLC, was formed in Delaware on 2026-09-22 and has no ownership tie to Coastal Federal Supply Co."],
-      financials: ["pass", "Coastal Federal Supply Co.: GSA contracts since 2019, consistent with this payment."],
+      procurement: ["pass", "Coastal Federal Supply Co.: GSA contracts since 2019, consistent with this payment"],
       network: ["warn", "Same receiving bank as three other vendor bank changes this month."] },
     "PV-71390": {
       owners: ["fail", "The receiving account belongs to a business with no ownership tie to Ridgeline Medical Products."],
@@ -345,9 +378,11 @@
   var TREAS = {
     PROGRAMS: PROGRAMS, AGENCIES: AGENCIES, MAILBOX: MAILBOX, OPERATOR: OPERATOR, BATCHES: BATCHES, EMPLOYERS: EMPLOYERS, GRAPH: GRAPH, LEADS: LEADS,
     SCHEMES: SCHEMES, SCHEME_ORDER: SCHEME_ORDER, NETS: NETS, BRIDGES: BRIDGES, PLAN: PLAN, FLOW: FLOW,
-    IDENTITY: IDENTITY, SIGNALS: SIGNALS, DNP: DNP, TL_CATS: TL_CATS, TL: TL, SCHEMA: SCHEMA, AGENCY_USERS: AGENCY_USERS, ALERT: 75,
+    IDENTITY: IDENTITY, SIGNALS: SIGNALS, DNP: DNP, TL_GROUPS: TL_GROUPS, TL_CATS: TL_CATS, TL: TL, LANES: LANES, LANE_ORDER: LANE_ORDER, SCHEMA: SCHEMA, AGENCY_USERS: AGENCY_USERS, ALERT: 75,
     signalsFor: function (id) { return SIGNALS.filter(function (s) { return s.payment === id || s.matched.indexOf(id) >= 0; }); },
-    tlFor: function (id) { var f = TL[id] || {}; return TL_CATS.map(function (c) { var r = f[c.k]; return { k: c.k, t: c.t, src: c.src, st: r ? r[0] : "pass", text: r ? r[1] : "No adverse findings" }; }); },
+    tlFor: function (id) { var f = TL[id] || {}; return TL_CATS.map(function (c) { var r = f[c.k]; return { k: c.k, g: c.g, t: c.t, src: c.src, st: r ? r[0] : "pass", text: r ? r[1] : "No adverse findings" }; }); },
+    // the signal an agency sent about this very payment (not one matched to it)
+    signalOn: function (id) { return SIGNALS.filter(function (x) { return x.payment === id; })[0] || null; },
     SEED: "PV-73194", THREAD: "PV-71588", DECISION: "PV-72455", SEED_AMOUNT: 18940, PEER_MEDIAN: 6100,
     // one morning's verification run (illustrative)
     INTAKE: { payments: 4380000, amount: 14600000000, fastLane: 0.9996, held: 1240 },
