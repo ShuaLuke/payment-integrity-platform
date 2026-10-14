@@ -60,7 +60,7 @@
   // Two identities appear twice, on different accounts (see IDENTITY).
   // [id, batch, program, payee, amount, status, account]
   var G = [
-    ["PV-73194", "A1", "REF", "Marisol T. Avery", 18940, "held", "••6208"],
+    ["PV-73194", "A1", "REF", "Anna Reed", 18940, "held", "••6208"],
     ["PV-71588", "A1", "REF", "Lena M. Whitcomb", 17480, "paid", "••6219"],
     ["PV-71522", "A1", "REF", "Terrence D. Okafor", 16210, "paid", "••6203"],
     ["PV-71655", "A1", "REF", "Jasmine R. Toller", 16980, "paid", "••6231"],
@@ -87,7 +87,7 @@
   var IDENTITY = {
     "Owen P. Strickland": { status: "deceased", label: "Deceased", note: "Died 2026-09-14 · obituary found by TrackLight · not yet in the Death Master File" },
     "Terrence D. Okafor": { status: "custody", label: "In custody", note: "In Georgia state custody since Jan 2026 (court record) · Do Not Pay checks federal prisons only · SSA benefits should be suspended" },
-    "Marisol T. Avery": { status: "stolen", label: "ID stolen", note: "Lives in Dayton, OH · her identity is being used without her" },
+    "Anna Reed": { status: "stolen", label: "ID stolen", note: "Lives in Dayton, OH · her identity is being used without her" },
     "Lena M. Whitcomb": { status: "stolen", label: "ID stolen", note: "Lives in Toledo, OH · filed her own return separately" }
   };
   var GRAPH = G.map(function (r, i) {
@@ -99,7 +99,7 @@
   // Pre-payment = verified before Treasury pays; post-payment = paid, flagged later.
   var LEADS = [
     // ---------------- pre-payment: verified before Treasury disburses ----------------
-    { id: "PV-73194", mode: "prepay", program: "REF", payeeName: "Marisol T. Avery", city: "Carver Mill, GA", address: MAILBOX.line, bank: "Brightpath Bank", acct: "••6208", acctOpened: "2026-09-17", batch: "A1", schedule: "IRS refund schedule 26-1006-0447",
+    { id: "PV-73194", mode: "prepay", program: "REF", payeeName: "Anna Reed", city: "Carver Mill, GA", address: MAILBOX.line, bank: "Brightpath Bank", acct: "••6208", acctOpened: "2026-09-17", batch: "A1", schedule: "IRS refund schedule 26-1006-0447",
       submitted: "2026-10-06 05:40", riskScore: 92, confidence: 0.91, recommendedAction: "hold", fwaType: "Stolen-identity refund", network: "N01", amount: 18940,
       reason: "Passed Do Not Pay, account and TIN checks · account opened 19 days ago in a batch of 34 · mailbox shared with 29 other payees · W-2 from an employer formed last year",
       signals: [
@@ -107,10 +107,10 @@
         { sev: "high", label: "Mailbox shared with 29 other payees", detail: "2210 Mill Pointe Pkwy, Ste 114 · PMB 212, Carver Mill, GA is a private mailbox at a shipping store. In 13 months, 46 federal payments to 30 different payees used it: tax refunds, Social Security benefits and federal annuities.", src: "Agency payment files · USPS mailbox list", lane: "treas" },
         { sev: "high", label: "W-2 from an employer with no real payroll", detail: "The return's only W-2 is from Harlan Ridge Logistics LLC, formed 2025-11-04 at the same mailbox. Harlan Ridge issued 38 W-2s; the tax it reports withholding was never deposited.", src: "OpenCorporates · IRS return flag", lane: "irs" },
         { sev: "high", label: "Mailbox flagged by SSA", detail: "On Oct 1, SSA flagged Gloria A. Pruitt: a phone call had moved her benefit to a new account and her mail to PMB 212. Treasury matched the flag to this mailbox, where the refund is going.", src: "SSA · SIG-SSA-0412", lane: "flag" },
-        { sev: "high", label: "The identity lives in Ohio, not Georgia", detail: "Marisol T. Avery has lived in Dayton, OH for 11 years, with no tie to Carver Mill, GA or to the employer on the W-2. Someone else is using her identity.", src: "PIPL", lane: "tl" },
+        { sev: "high", label: "The identity lives in Ohio, not Georgia", detail: "Anna Reed has lived in Dayton, OH for 11 years, with no tie to Carver Mill, GA or to the employer on the W-2. Someone else is using her identity.", src: "PIPL", lane: "tl" },
         { sev: "med", label: "Refund 3.1× the peer median", detail: "Peer median refund for a single filer reporting $44,800 in wages: $6,100. This one is $18,940, almost all of it reported withholding.", src: "Peer comparison", lane: "treas" },
         { sev: "low", label: "Passed Do Not Pay", detail: "No match in any Do Not Pay source: death, debarment, debt, incarceration.", src: "Do Not Pay", lane: "dnp" },
-        { sev: "low", label: "Account ownership and TIN verified", detail: "The account is in Marisol T. Avery's name, and the TIN is valid and matches.", src: "Account & TIN verification", lane: "dnp" }
+        { sev: "low", label: "Account ownership and TIN verified", detail: "The account is in Anna Reed's name, and the TIN is valid and matches.", src: "Account & TIN verification", lane: "dnp" }
       ] },
     { id: "PV-73215", mode: "prepay", program: "REF", payeeName: "Owen P. Strickland", city: "Carver Mill, GA", address: MAILBOX.line, bank: "Corridor Financial", acct: "••0874", acctOpened: "2026-03-14", batch: "A5", schedule: "IRS refund schedule 26-1006-0447",
       submitted: "2026-10-06 05:40", riskScore: 88, confidence: 0.87, recommendedAction: "hold", fwaType: "Stolen-identity refund", network: "N01", amount: 17760,
@@ -374,7 +374,7 @@
   };
   var TL = {
     "PV-73194": Object.assign({}, DELMONT_TL, {
-      social: ["fail", "Marisol T. Avery has lived in Dayton, OH for 11 years, with no tie to Carver Mill, GA or to Harlan Ridge Logistics."],
+      social: ["fail", "Anna Reed has lived in Dayton, OH for 11 years, with no tie to Carver Mill, GA or to Harlan Ridge Logistics."],
       owners: ["fail", "W-2 employer Harlan Ridge Logistics LLC, formed 2025-11-04 at PMB 212: no owner of record above 10%."] }),
     "PV-73215": Object.assign({}, DELMONT_TL, {
       deceased: ["fail", "Obituary published 2026-09-16 in Macon, GA: died 2026-09-14. Not yet in the Death Master File."],

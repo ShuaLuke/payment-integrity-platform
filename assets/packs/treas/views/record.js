@@ -262,7 +262,7 @@
 
   // ---- address: every federal payee at the mailbox ----
   var BOX = [
-    ["PV-73194", "Marisol T. Avery", "REF", 18940, "2026-10-06", "Brightpath ••6208", "held"],
+    ["PV-73194", "Anna Reed", "REF", 18940, "2026-10-06", "Brightpath ••6208", "held"],
     ["PV-73215", "Owen P. Strickland", "REF", 17760, "2026-10-06", "Corridor ••0874", "held"],
     ["PV-71588", "Lena M. Whitcomb", "REF", 17480, "2026-09-23", "Brightpath ••6219", "paid"],
     ["PV-71522", "Terrence D. Okafor", "REF", 16210, "2026-09-16", "Brightpath ••6203", "paid"],

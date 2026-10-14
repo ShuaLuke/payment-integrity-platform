@@ -1,6 +1,6 @@
 // Records the Treasury deck's demo clips from the platform site served locally
 // (preview config platform-dev :8171). Same recorder as record-clips-prep.cjs, new scenes.
-// v2 (Oct 14): follows the 12-step tour — adds tracklight, handoff and irs.
+// v2 (Oct 14): follows the 13-step tour — tracklight, discovery, handoff, irs, ring added.
 // Usage: NODE_PATH=~/Desktop/aucket/node_modules node tools/record-clips-treas.cjs [clip ...]
 // Output: $CLIPS_DIR or ~/dev/treas-clips (kept outside the repo; frame folders are large).
 const { chromium } = require("playwright-core");
@@ -109,6 +109,7 @@ const CLIPS = {
   // slide 4: pull the thread — everyone paid at the mailbox
   async explain(page) {
     await fresh(page, 3);
+    await page.evaluate(() => { if (window.COPILOT) window.COPILOT.close(); });
     await page.evaluate(() => { const p = document.getElementById("r-panel"), nav = document.querySelector(".topnav"); window.scrollTo(0, p.getBoundingClientRect().top + window.scrollY - nav.getBoundingClientRect().bottom - 60); });
     await sleep(400);
     await rec(page, async () => {
@@ -116,7 +117,7 @@ const CLIPS = {
       const chips = await page.$$("#r-panel .card > div:nth-child(2) > div");
       for (let i = 0; i < Math.min(6, chips.length); i++) { await moveToEl(page, chips[i], i ? 500 : 1000); await sleep(i >= 3 ? 900 : 600); }
       const row = re => page.evaluateHandle(src => [...document.querySelectorAll("#r-panel tbody tr")].find(r => new RegExp(src).test(r.textContent)), re.source);
-      await moveToEl(page, await row(/Marisol T\. Avery/), 1000); await sleep(1500);
+      await moveToEl(page, await row(/Anna Reed/), 1000); await sleep(1500);
       await moveToEl(page, await row(/Gloria A\. Pruitt/), 1000); await sleep(1800);
       await moveToEl(page, await row(/Harold B\. Severs/), 900); await sleep(1800);
       await moveToEl(page, await row(/37 more payments/), 900); await sleep(1600);
@@ -124,7 +125,7 @@ const CLIPS = {
   },
   // slide 5: the three agents in the Investigative Assistant
   async agents(page) {
-    await fresh(page, 4);
+    await fresh(page, 3);
     const panel = await page.evaluateHandle(() => [...document.querySelectorAll("body > div")].find(d => d.style.width === "370px"));
     const scroller = await panel.evaluate(p => { const s = [...p.querySelectorAll("div")].find(d => d.scrollHeight > d.clientHeight + 40 && getComputedStyle(d).overflowY !== "visible"); if (s) s.id = "rec-scroll"; return !!s; });
     await rec(page, async () => {
@@ -140,6 +141,7 @@ const CLIPS = {
     await page.evaluate(() => {
       const P = window.TREAS, me = window.APP.ROLES[window.APP.state.role].name;
       window.APP.assignCase(P.DECISION, me); window.APP.startLeadReview(P.DECISION); window.APP.openAllegation(P.DECISION);
+      const b = document.getElementById("cp-fab"); if (b) b.style.display = "none";
       const t = document.querySelector('.ctab[data-tab="decision"]'); if (t) t.click();
     });
     await sleep(700);
@@ -158,6 +160,7 @@ const CLIPS = {
   // slide 7: the network, down to the payment
   async chain(page) {
     await fresh(page, 6);
+    await page.evaluate(() => { const b = document.getElementById("cp-fab"); if (b) b.style.display = "none"; });
     await page.evaluate(() => { const cv = document.getElementById("n-canvas"), nav = document.querySelector(".topnav"); window.scrollTo(0, cv.getBoundingClientRect().top + window.scrollY - nav.getBoundingClientRect().bottom - 8); });
     await sleep(500);
     const g = pred => page.evaluateHandle(pred);
@@ -206,7 +209,7 @@ const CLIPS = {
   },
   // new slide: the recommendation package, two ways, then send
   async handoff(page) {
-    await fresh(page, 9);
+    await fresh(page, 8);
     await page.evaluate(() => { const f = document.getElementById("cp-fab"); if (f) f.style.display = "none"; }); // it sits over the Send button
     await rec(page, async () => {
       await sleep(700);
@@ -224,7 +227,7 @@ const CLIPS = {
   },
   // new slide: IRS decides in its own system, and Treasury sees it
   async irs(page) {
-    await fresh(page, 10);
+    await fresh(page, 9);
     await rec(page, async () => {
       await sleep(800);
       await click(page, "#ap-login", 1100); await sleep(1600);
@@ -237,9 +240,38 @@ const CLIPS = {
       await moveToEl(page, "#r-hbanner", 1000); await sleep(2600);
     });
   },
+  // new slide: how the network was found
+  async discovery(page) {
+    await fresh(page, 5);
+    await page.evaluate(() => { const b = document.getElementById("cp-fab"); if (b) b.style.display = "none"; const el = document.getElementById("n-discovery"), nav = document.querySelector(".topnav"); window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - nav.getBoundingClientRect().bottom - 8); });
+    await sleep(500);
+    await rec(page, async () => {
+      await sleep(700);
+      const cards = await page.$$("#n-discovery > div:last-child > div");
+      for (let i = 0; i < cards.length; i++) { await moveToEl(page, cards[i], i ? 700 : 1000); await sleep(i === cards.length - 1 ? 2200 : 1500); }
+    });
+  },
+  // new slide: the whole ring, referred, and IRS opens a case
+  async ring(page) {
+    await fresh(page, 11);
+    await page.evaluate(() => { const b = document.getElementById("cp-fab"); if (b) b.style.display = "none"; });
+    await rec(page, async () => {
+      await sleep(800);
+      await moveToEl(page, await byText(page, "#view div", /^Your share/), 1000); await sleep(2000);
+      await moveToEl(page, await byText(page, "#view div", /^The ring$/), 900); await sleep(1800);
+      await smoothScroll(page, 420, 1500); await sleep(1200);
+      await moveTo(page, 600, 500, 700); await sleep(1500);
+      await smoothScroll(page, -420, 1200);
+      await moveToEl(page, 'input[name="ap-ndec"][value="case"]', 1000); await sleep(1200);
+      await click(page, "#ap-nnote", 700); await page.keyboard.type("Case IRS-CI-2026-4471 opened; 41 pending refunds held.", { delay: 26 }); await sleep(500);
+      await click(page, "#ap-nsubmit", 1000); await sleep(2200);
+    });
+  },
   // slide 9: from one refund to $100.4M
   async funnel(page) {
-    await fresh(page, 8);
+    await fresh(page, 7);
+    await page.evaluate(() => { window.scrollTo(0, 0); const f = document.getElementById("nv-funnel"); if (f) { f.style.outline = "2px solid #0f62fe"; f.style.outlineOffset = "2px"; } });
+    await sleep(300);
     await rec(page, async () => {
       await sleep(700);
       const stages = await page.$$(".fn-stage");
