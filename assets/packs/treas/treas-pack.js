@@ -46,17 +46,122 @@
     insights: [{ v: "edi", l: "Payment flow" }, { v: "network", l: "Networks" }],
     library: []
   };
-  APP.VIEW_AREA = { home: "home", queue: "casework", claim: "casework", approvals: "casework", edi: "insights", network: "insights" };
+  APP.VIEW_AREA = { home: "home", queue: "casework", claim: "casework", approvals: "casework", handoff: "casework", edi: "insights", network: "insights", agencyportal: "portal" };
   var baseLabel = APP.labelForSnap;
   APP.labelForSnap = function (s) {
     if (!s) return "Payments";
     if (s.view === "claim") return "Payment " + s.allegationId;
-    var map = { queue: "Payments", home: "Home", approvals: "Approvals", edi: "Payment flow", network: "Networks" };
+    if (s.view === "handoff") return "Package · " + s.allegationId;
+    var map = { queue: "Payments", home: "Home", approvals: "Approvals", edi: "Payment flow", network: "Networks", agencyportal: "Agency system" };
     return map[s.view] || baseLabel(s);
   };
   APP.backLabel = function () { return APP.state.hist && APP.state.hist.length ? APP.labelForSnap(APP.state.hist[APP.state.hist.length - 1]) : "Payments"; };
-  APP.togglePortal = function () {};
   APP.pendingCaseReviews = function () { return []; };
+
+  // ---- hand-off: Treasury recommends, the certifying agency decides ----
+  // Treasury can't stop a payment: only the agency that certified it can. So a
+  // flagged payment goes to that agency as a recommendation package (readable +
+  // structured, in the shared schema), the agency decides in its own system (the
+  // simulated agency portal), and the decision comes back to Treasury.
+  APP.state.handoffs = {};
+  APP.state.agencyAuth = {};
+  T.REC_ACTIONS = {
+    prepay: [
+      { c: "hold", t: "Hold and verify the payee", icon: "clock-hour-4", tone: "med" },
+      { c: "stop", t: "Stop the payment", icon: "hand-stop", tone: "high" },
+      { c: "release", t: "Release: no concerns", icon: "check", tone: "low" }
+    ],
+    post: [
+      { c: "reclaim", t: "Reclaim from the bank and restore the payee", icon: "receipt-refund", tone: "high" },
+      { c: "refer", t: "Refer to the agency's OIG", icon: "shield-search", tone: "med" },
+      { c: "none", t: "No action: payment proper", icon: "check", tone: "low" }
+    ]
+  };
+  T.AGENCY_DECISIONS = {
+    prepay: [
+      { c: "stop", t: "Stop the payment", icon: "hand-stop", tone: "high", status: "Stopped by " },
+      { c: "release", t: "Release the payment", icon: "check", tone: "low", status: "Released by " },
+      { c: "info", t: "Ask Treasury for more", icon: "message-question", tone: "med", status: "More info requested by " }
+    ],
+    post: [
+      { c: "reclaim", t: "Request reclamation", icon: "receipt-refund", tone: "high", status: "Reclamation requested by " },
+      { c: "none", t: "No action", icon: "check", tone: "low", status: "Closed by " },
+      { c: "info", t: "Ask Treasury for more", icon: "message-question", tone: "med", status: "More info requested by " }
+    ]
+  };
+  T.AGENCY_REASONS = {
+    stop: [{ c: "AG-S1", t: "Payee identity not verified: the taxpayer didn't file this" }, { c: "AG-S2", t: "Payee deceased" }, { c: "AG-S3", t: "Account not controlled by the payee" }],
+    release: [{ c: "AG-R1", t: "Payee verified by the agency" }, { c: "AG-R2", t: "Flag explained: payment proper" }],
+    reclaim: [{ c: "AG-C1", t: "Payment redirected without the payee's consent" }, { c: "AG-C2", t: "Payee's identity was stolen" }],
+    none: [{ c: "AG-N1", t: "Payment proper as certified" }],
+    info: [{ c: "AG-I1", t: "Send the bank's account-opening records" }, { c: "AG-I2", t: "Send the linked payments" }]
+  };
+  var stage = function (l) { return l.mode === "prepay" ? "prepay" : "post"; };
+  T.defaultRec = function (l) { return { hold: "hold", deny: "stop", pay: "release", confirm: "reclaim", escalate: "refer", dismiss: "none" }[l.recommendedAction] || "hold"; };
+  T.recLabel = function (l, c) { var r = T.REC_ACTIONS[stage(l)].filter(function (x) { return x.c === c; })[0]; return r ? r.t : c; };
+  T.agencyDecision = function (l, c) { return T.AGENCY_DECISIONS[stage(l)].filter(function (x) { return x.c === c; })[0] || null; };
+  T.agencyReasonLabel = function (c) { var all = []; Object.keys(T.AGENCY_REASONS).forEach(function (k) { all = all.concat(T.AGENCY_REASONS[k]); }); var r = all.filter(function (x) { return x.c === c; })[0]; return r ? r.c + " · " + r.t : c; };
+  T.handoff = function (id) { return APP.state.handoffs[id] || null; };
+  T.handoffsFor = function (agency) { return Object.keys(APP.state.handoffs).map(function (k) { return APP.state.handoffs[k]; }).filter(function (h) { return h.agency === agency; }).sort(function (a, b) { return b.sentAt - a.sentAt; }); };
+  // the structured package — what actually travels between the two systems
+  T.payload = function (l, rec, reason) {
+    var h = T.handoff(l.id), n = l.network ? T.net(l.network) : null, due = new Date(Date.now() + 5 * 864e5);
+    return {
+      schema: T.SCHEMA.id,
+      packageId: h ? h.pkg : "PKG-" + l.id.replace("PV-", "") + "-01",
+      from: "treasury.fiscal-service",
+      to: l.agency.toLowerCase(),
+      payment: { id: l.id, type: l.prog.name, amount: l.amount, status: l.mode === "prepay" ? "not yet disbursed" : "paid " + (l.paidDate || "") },
+      payee: { name: l.payee, account: l.bank + " " + l.acct },
+      recommendation: { action: rec, reasonCode: reason },
+      riskScore: l.riskScore,
+      evidence: (l.signals || []).filter(function (s) { return s.sev !== "low"; }).map(function (s) { return { finding: s.label, source: s.src }; }),
+      network: n ? { id: n.id, payees: n.payees, agencies: n.agencies } : null,
+      respondBy: APP.fmtDate(due)
+    };
+  };
+  APP.openHandoff = function (id, rec) {
+    (APP.state.hist = APP.state.hist || []).push(APP.snapshot());
+    APP.state.allegationId = id;
+    APP.nav("handoff", { id: id, rec: rec });
+  };
+  APP.sendHandoff = function (id, rec, reason, note) {
+    var l = T.lead(id); if (!l) return null;
+    var h = { pkg: "PKG-" + id.replace("PV-", "") + "-01", id: id, agency: l.agency, rec: rec, reason: reason, note: note || "", sentAt: new Date(), sentBy: (APP.ROLES[APP.state.role] || {}).name, status: "sent", decision: null };
+    h.payload = T.payload(l, rec, reason);
+    APP.state.handoffs[id] = h;
+    if (l.mode === "prepay") {
+      APP.state.prepayDecisions[id] = { action: "refer", rec: rec, reason: reason, justification: note || "", ts: h.sentAt, atRisk: l.amount };
+      l.status = "Sent to " + l.agency;
+    }
+    APP.auditLog("PACKAGE_SENT", "Payment " + id + " · recommendation sent to " + T.AGENCIES[l.agency].name + ": " + T.recLabel(l, rec) + " · " + h.pkg + " (" + T.SCHEMA.name + ")");
+    return h;
+  };
+  APP.agencyDecide = function (id, decision, reason, note) {
+    var h = T.handoff(id), l = T.lead(id); if (!h || !l) return;
+    var u = T.AGENCY_USERS[h.agency], d = T.agencyDecision(l, decision);
+    h.decision = { c: decision, reason: reason, note: note || "", ts: new Date(), by: u.name, title: u.title };
+    h.status = "decided";
+    l.status = d.status + h.agency;
+    if (l.mode === "prepay" && APP.state.prepayDecisions[id]) APP.state.prepayDecisions[id].agency = h.decision;
+    APP.auditLog("AGENCY_DECISION", "Payment " + id + " · " + T.AGENCIES[h.agency].name + " (" + u.name + "): " + d.t + " · " + T.agencyReasonLabel(reason));
+  };
+  // the agency's own (simulated) system — a separate instance that receives packages
+  APP.openAgencyPortal = function (agency, id) {
+    if (APP.state.view !== "agencyportal") APP.state._preAgencySnap = APP.snapshot();
+    APP.nav("agencyportal", { agency: agency, id: id });
+  };
+  APP.leaveAgencyPortal = function () {
+    var s = APP.state._preAgencySnap; APP.state._preAgencySnap = null;
+    if (s && s.view && s.view !== "agencyportal") { APP.state.allegationId = s.allegationId; APP.nav(s.view, { id: s.allegationId }); }
+    else APP.nav("home");
+  };
+  // the logo switches between Treasury and the IRS system (or the agency of the payment in view)
+  APP.togglePortal = function () {
+    if (APP.state.view === "agencyportal") return APP.leaveAgencyPortal();
+    var l = APP.state.allegationId ? T.lead(APP.state.allegationId) : null;
+    APP.openAgencyPortal(l && T.handoff(l.id) ? l.agency : "IRS", l && T.handoff(l.id) ? l.id : null);
+  };
 
   // ---- decisions: payment reason codes ----
   APP.REASONS = {
@@ -103,23 +208,27 @@
     return DEFAULT_REASON[l.fwaType] || "IDT-01";
   };
 
-  // pre-payment Pay / Hold / Return on a payment
+  // pre-payment: Treasury releases a clean payment, or refers a flagged one to the
+  // certifying agency with a recommendation (Hold / Return become the package's
+  // recommended action — the agency makes the call)
   var basePrepay = APP.prepayDecide;
   APP.prepayDecide = function (id, action, reason, justification) {
     if (!isT(id)) return basePrepay(id, action, reason, justification);
     var l = T.lead(id); if (!l) return;
-    l.status = { pay: "Released to pay", hold: "Held — verification", deny: "Returned to agency" }[action];
-    APP.state.prepayDecisions[id] = { action: action, reason: reason || T.defaultReason(l, action), justification: justification || "", ts: new Date(), atRisk: l.amount };
-    APP.auditLog("PREPAY_" + action.toUpperCase(), "Payment " + id + " · " + { pay: "released for disbursement", hold: "held pending verification — not disbursed", deny: "returned to the certifying agency — payment prevented" }[action] + " · " + usd(l.amount));
+    // deferred: callers re-render the queue right after deciding, and the package screen must win
+    if (action !== "pay") { var rec = action === "deny" ? "stop" : action === "hold" ? "hold" : T.defaultRec(l); setTimeout(function () { APP.openHandoff(id, rec); }, 0); return; }
+    l.status = "Released to pay";
+    APP.state.prepayDecisions[id] = { action: "pay", reason: reason || T.defaultReason(l, "pay"), justification: justification || "", ts: new Date(), atRisk: l.amount };
+    APP.auditLog("PREPAY_PAY", "Payment " + id + " · released for disbursement · " + usd(l.amount));
   };
 
   // ---- the Investigative Assistant's Treasury content ----
   var N01 = function () { return T.net("N01"); };
   function inRing(a) { return a.network === "N01"; }
   var baseSummary = AI.adjudicationSummary, baseAgents = AI.agentReports, baseCopilot = AI.copilot, baseLetter = AI.correspondence, baseKb = AI.knowledgeBase;
-  var REC_LABEL = { hold: "Hold — verify the payee", deny: "Return to agency", pay: "Pay", confirm: "Reclaim · recover", dismiss: "Clear — payment stands", escalate: "Refer" };
+  var REC_LABEL = { hold: "Refer to the agency · recommend hold", deny: "Refer to the agency · recommend stop", pay: "Pay", confirm: "Reclaim · recover", dismiss: "Clear — payment stands", escalate: "Refer" };
   function recRationale(a) {
-    if (a.id === T.SEED) return "Every list check passed, and that's the point: the identity is real and the account is in that name. What doesn't fit is everything around the payment. The account is 19 days old and one of 34 opened in a batch, the mailbox is shared with 29 other federal payees, and the W-2 comes from an employer with no real payroll. Holding costs a legitimate taxpayer a few days; paying sends $18,940 to an account that will be empty within hours. If IRS verifies the taxpayer, the refund releases.";
+    if (a.id === T.SEED) return "Every list check passed, and that's the point: the identity is real and the account is in that name. What doesn't fit is everything around the payment. The account is 19 days old and one of 34 opened in a batch, the mailbox is shared with 29 other federal payees, and the W-2 comes from an employer with no real payroll. Recommend that IRS hold it and verify the taxpayer: a hold costs a legitimate taxpayer a few days, while paying sends $18,940 to an account that will be empty within hours. If IRS verifies the taxpayer, the refund releases.";
     if (a.id === T.THREAD) return "Already paid, to an account in the same batch and the same mailbox as PV-73194, and the real taxpayer has filed her own return. Ask the bank to return what's left (reclamation), tell IRS so the real taxpayer's refund isn't delayed, and attach it to the Delmont case.";
     if (a.id === T.DECISION) return "Ms. Pruitt's benefit went to an account she didn't open, after a phone call she didn't make, from a number that made 36 other changes. Reclaim the four payments from Lumen Direct, ask SSA to restore her deposit and reissue the missed payments, and place it on the Delmont case.";
     if (a.recommendedAction === "pay") return "The payee, account and amount check out against independent sources. Pay now: the fast lane keeps 99.96% of payments on schedule.";
@@ -190,7 +299,7 @@
     if (/account|bank|batch/.test(q)) return a.batchRec ? a.bank + " account " + a.acct + ", opened " + a.acctOpened + ", one of " + a.batchRec.accts + " accounts with neighboring numbers (" + a.batchRec.range + ") opened " + a.batchRec.opened + ", each in a different name." : a.bank + " account " + a.acct + (a.acctOpened && a.acctOpened !== "—" ? ", held since " + a.acctOpened : "") + ".";
     if (/who|employer|w-2|w2|preparer|owner/.test(q)) return a.network === "N01" ? "The W-2s come from eight employers formed in the last year at PMB 212, Carver Mill, GA, with registered agent " + T.OPERATOR.agent + ". The returns were prepared by " + T.OPERATOR.preparer + ", which has no PTIN; its phone " + T.OPERATOR.phone + " also made 37 direct-deposit changes." : "No employer or preparer ties found.";
     if (/network|link|related|connect|other/.test(q)) return n ? n.name + ": " + T.SCHEMES[n.scheme].label.toLowerCase() + ", " + n.payees + " payees in " + n.states.join(", ") + ", " + bigUsd(n.atRisk) + " across " + n.agencies.join(", ") + ". Open Insights › Networks to see it down to the payment." : "No links found: this payment shares no account batch, address, phone or employer with other payees.";
-    if (/reclaim|recover|refer|letter|notice|oig|tigta/.test(q)) return a.mode === "prepay" ? "Nothing to recover yet: the payment hasn't gone out. Hold it and send the certifying agency a verification request (Correspondence tab)." : "Recovery runs through reclamation: ask the receiving bank to return the funds (31 CFR Part 210), and the agency reissues to the right payee. The Correspondence tab drafts the reclamation request" + (a.network ? " and a referral memo for TIGTA and IRS-CI." : ".");
+    if (/reclaim|recover|refer|letter|notice|oig|tigta/.test(q)) return a.mode === "prepay" ? "Nothing to recover yet: the payment hasn't gone out. Only " + a.agency + " can stop it, so send " + a.agency + " a recommendation package (Send to " + a.agency + " on the payment) and it decides in its own system." : "Recovery runs through reclamation: ask the receiving bank to return the funds (31 CFR Part 210), and the agency reissues to the right payee. The Correspondence tab drafts the reclamation request" + (a.network ? " and a referral memo for TIGTA and IRS-CI." : ".");
     if (/rule|policy|law|regulation|privacy|6103/.test(q)) return "The rules that apply here: verify before paying (PIIA, 31 U.S.C. 3351–3358; EO 14249), reclamation of ACH payments (31 CFR Part 210), confidentiality of return information (26 U.S.C. § 6103), and the identity-theft and false-claims statutes. The Policy agent lists which ones this payment touches.";
     return a.id + " · " + a.payee + " · " + usd(a.amount) + " · risk " + a.riskScore + ". " + a.reason + ". " + recRationale(a);
   };
@@ -240,5 +349,11 @@
     document.querySelectorAll(".modebtn").forEach(function (b) { var m = b.getAttribute("data-mode"); if (lbl[m]) b.innerHTML = lbl[m]; });
     var mt = document.getElementById("mode-toggle"); if (mt) mt.title = "Pre-payment = verify payments before Treasury disburses them · Post-payment = review what's been paid";
   }
+  // inside the agency's system, Treasury's controls step out of the way (the logo returns)
+  var st = document.createElement("style");
+  st.textContent = "body[data-sys=agency] .navitems,body[data-sys=agency] #mode-toggle,body[data-sys=agency] #reset-demo,body[data-sys=agency] .conn,body[data-sys=agency] #role-switch,body[data-sys=agency] #prog-switch,body[data-sys=agency] #cp-fab,body[data-sys=agency] #cp-panel{visibility:hidden}";
+  document.head.appendChild(st);
+  var baseNav = APP.nav;
+  APP.nav = function (view, params) { document.body.setAttribute("data-sys", view === "agencyportal" ? "agency" : "treasury"); return baseNav(view, params); };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", chrome); else chrome();
 })();

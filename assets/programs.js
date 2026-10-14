@@ -24,7 +24,8 @@
     { id: "treas", live: true, agency: "Treasury", icon: "cash-banknote", title: "Treasury payments", sub: "Bureau of the Fiscal Service · Do Not Pay",
       body: "Every agency's payments, checked against each other before Treasury pays. Account batches, shared mailboxes, redirected benefits, stolen-identity refunds.",
       scripts: ["assets/packs/treas/treas-data.js", "assets/packs/treas/treas-pack.js", "assets/packs/treas/views/home.js", "assets/packs/treas/views/queue.js",
-        "assets/packs/treas/views/record.js", "assets/packs/treas/views/flow.js", "assets/packs/treas/views/network.js", "assets/packs/treas/treas-tour.js"] },
+        "assets/packs/treas/views/record.js", "assets/packs/treas/views/flow.js", "assets/packs/treas/views/network.js",
+        "assets/packs/treas/views/handoff.js", "assets/packs/treas/views/agencyportal.js", "assets/packs/treas/treas-tour.js"] },
     // planned programs (from the opportunity map, opportunities.html), shown as "Coming soon"
     { id: "ui", agency: "Dept. of Labor", icon: "briefcase", title: "Unemployment Insurance", sub: "State workforce agencies",
       body: "Multistate claimants, stolen identities, shared addresses, emails and bank accounts." },

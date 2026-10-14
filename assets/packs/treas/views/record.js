@@ -1,9 +1,11 @@
 /* Treasury pack · the payment record — the Treasury counterpart of the claim/lead
    file. Left rail: the payee, the payment, the deposit account, the disbursement.
-   Tabs: Overview (why flagged) · Checks (the list checks it passed, and the
-   pattern checks it didn't) · Address (every federal payee at the mailbox) ·
+   Tabs: Overview (why flagged: risk factors, agency flags) · Checks (Do Not Pay
+   beside TrackLight, then the pattern checks) · Address (every federal payee at the mailbox) ·
    Account (the account batch, the W-2 employers, the deposit history) · Links ·
-   History · Decision. Replaces Views.claim, so APP.openAllegation(id) opens it. */
+   History · Decision. Header: Send to the certifying agency (the recommendation
+   package), and a strip showing what the agency decided. Replaces Views.claim,
+   so APP.openAllegation(id) opens it. */
 (function () {
   window.Views = window.Views || {};
   var T = window.TREAS;
@@ -27,7 +29,9 @@
         '<span class="page-title">Payment ' + id + ' · ' + esc(a.payee) + ' — ' + esc(a.fwaType) + '</span>' + window.UI.statusPill(a.status) +
         '<span class="pill" style="background:' + (prepay ? "var(--accent-l);color:var(--accent-d)" : "var(--surface);color:var(--text2)") + ';font-size:10.5px"><i class="ti ti-' + (prepay ? "clock-play" : "history") + '"></i> ' + (prepay ? "Pre-payment" : "Paid " + (a.paidDate || "")) + '</span>' +
         '<span class="mono" style="font-size:11px;color:var(--text2)">' + a.agency + ' · ' + esc(a.prog.name) + '</span>' +
-        '<span style="flex:1"></span><button class="btn primary" id="r-sum" style="font-size:12px"><i class="ti ti-file-analytics"></i> Summarize for adjudication</button></div>' +
+        '<span style="flex:1"></span><button class="btn" id="r-send" style="font-size:12px"><i class="ti ti-' + (T.handoff(id) ? "package" : "send") + '"></i> ' + (T.handoff(id) ? "View package" : "Send to " + a.agency) + '</button>' +
+        '<button class="btn primary" id="r-sum" style="font-size:12px"><i class="ti ti-file-analytics"></i> Summarize for adjudication</button></div>' +
+        handoffBanner(a) +
         (a.network === "N01" ? threadBanner(a) : "") +
         '<div class="split" style="display:flex;gap:12px;align-items:flex-start">' +
         '<div class="rail" style="width:210px;flex:none;display:flex;flex-direction:column;gap:10px">' + rail(a) + '</div>' +
@@ -35,6 +39,8 @@
         '</div></div>';
       document.getElementById("r-back").onclick = function () { window.APP.goBack(); };
       document.getElementById("r-sum").onclick = function () { if (window.COPILOT) window.COPILOT.summarize(id); };
+      document.getElementById("r-send").onclick = function () { window.APP.openHandoff(id); };
+      var hb = document.getElementById("r-hbanner"); if (hb) hb.onclick = function () { window.APP.openHandoff(id); };
       var tn = document.getElementById("r-thread"); if (tn) tn.onclick = function () { window.APP.state.networkScenario = "N01"; window.APP.nav("network"); };
       var am = document.getElementById("r-assign-me"); if (am) am.onclick = function () { window.APP.assignCase(id, window.APP.ROLES[window.APP.state.role].name); window.APP.startLeadReview(id); window.Views.claim.render(mount, { id: id }); };
       mount.querySelectorAll(".ctab").forEach(function (b) { b.onclick = function () { show(b.getAttribute("data-tab")); }; });
@@ -46,6 +52,19 @@
       if (seg) setTimeout(function () { var el = document.querySelector('.seg[data-d="' + seg + '"]'); if (el) el.click(); }, 60);
     }
   };
+
+  // what the certifying agency did with Treasury's recommendation
+  function handoffBanner(a) {
+    var h = T.handoff(a.id); if (!h) return "";
+    var d = h.decision ? T.agencyDecision(a, h.decision.c) : null;
+    var tone = !d ? ["var(--med-tx)", "var(--med-bg)", "clock"] : d.tone === "high" ? ["var(--high-tx)", "var(--high-bg)", d.icon] : d.tone === "low" ? ["var(--low-tx)", "var(--low-bg)", d.icon] : ["var(--med-tx)", "var(--med-bg)", d.icon];
+    return '<div id="r-hbanner" style="cursor:pointer;display:flex;align-items:center;gap:12px;background:' + tone[1] + ';border:0.5px solid ' + tone[0] + ';border-radius:9px;padding:9px 14px;margin-bottom:12px">' +
+      '<i class="ti ti-' + tone[2] + '" style="font-size:20px;color:' + tone[0] + '"></i>' +
+      '<div style="flex:1;font-size:12.5px;line-height:1.45;color:var(--ink)">' + (d
+        ? '<b style="color:' + tone[0] + '">' + esc(T.AGENCIES[h.agency].name) + ': ' + esc(d.t) + '</b> · ' + esc(h.decision.by) + ' · ' + window.APP.fmtTs(h.decision.ts) + ' · ' + esc(T.agencyReasonLabel(h.decision.reason)) + (h.decision.note ? '<div style="color:var(--text2)">“' + esc(h.decision.note) + '”</div>' : '')
+        : '<b style="color:' + tone[0] + '">Sent to ' + esc(T.AGENCIES[h.agency].name) + '</b> · Treasury recommends: ' + esc(T.recLabel(a, h.rec)) + ' · ' + h.pkg + ' · ' + window.APP.fmtTs(h.sentAt) + '. Only ' + h.agency + ' can stop or recover the payment.') + '</div>' +
+      '<span style="font-size:11.5px;color:' + tone[0] + ';white-space:nowrap">View package <i class="ti ti-arrow-right"></i></span></div>';
+  }
 
   function threadBanner(a) {
     var b = a.batchRec;
@@ -72,9 +91,10 @@
   }
 
   function tracker(a, dec, prepay) {
-    var steps = prepay ? ["Certified", "Verified", "Decision", "Paid or held"] : ["Flagged", "Assigned", "Under review", "Decision", "Supervisor review", "Case"];
+    var h = T.handoff(a.id), released = dec && dec.action === "pay";
+    var steps = prepay ? (released ? ["Certified", "Verified", "Released", "Paid"] : ["Certified", "Verified", "Sent to " + a.agency, a.agency + " decision"]) : ["Flagged", "Assigned", "Under review", "Decision", "Supervisor review", "Case"];
     var at;
-    if (prepay) at = dec ? 3 : 1;
+    if (prepay) at = released || (h && h.decision) ? 4 : h ? 3 : 1;
     else {
       var st = a.status;
       at = st === "New" ? 0 : st === "Assigned" ? 1 : st === "Under review" || st === "Returned" ? 2 : st === "Pending review" ? 4 : st === "Dismissed" ? 3 : 5;
@@ -109,7 +129,7 @@
 
   var SEV = { high: ["var(--high-bg)", "var(--high-tx)", "var(--high)"], med: ["var(--med-bg)", "var(--med-tx)", "var(--med)"], low: ["var(--low-bg)", "var(--low-tx)", "var(--low)"] };
   function overview(a) {
-    var rec = { pay: ["Pay", "var(--low-tx)", "var(--low-bg)", "check"], hold: ["Hold — verify the payee", "var(--med-tx)", "var(--med-bg)", "clock-hour-4"], deny: ["Return to agency", "var(--high-tx)", "var(--high-bg)", "arrow-back-up"], confirm: ["Reclaim · recover", "var(--high-tx)", "var(--high-bg)", "alert-triangle"], dismiss: ["Clear — payment stands", "var(--low-tx)", "var(--low-bg)", "circle-check"] }[a.recommendedAction];
+    var rec = { pay: ["Release", "var(--low-tx)", "var(--low-bg)", "check"], hold: ["Refer to " + a.agency + " · recommend hold", "var(--med-tx)", "var(--med-bg)", "send"], deny: ["Refer to " + a.agency + " · recommend stop", "var(--high-tx)", "var(--high-bg)", "send"], confirm: ["Reclaim · recover", "var(--high-tx)", "var(--high-bg)", "alert-triangle"], dismiss: ["Clear — payment stands", "var(--low-tx)", "var(--low-bg)", "circle-check"] }[a.recommendedAction];
     var sig = a.signals.map(function (s) {
       var c = SEV[s.sev] || SEV.low;
       return '<div style="display:flex;gap:10px;padding:9px 0;border-top:0.5px solid var(--border2)"><span style="width:8px;height:8px;border-radius:50%;background:' + c[2] + ';flex:none;margin-top:5px"></span>' +
@@ -120,17 +140,43 @@
       '<div class="card" style="flex:2;min-width:340px;margin:0"><div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
       '<div style="width:54px;height:54px;border-radius:50%;border:5px solid ' + (a.riskScore >= 80 ? "var(--high)" : a.riskScore >= 50 ? "var(--med)" : "var(--low)") + ';display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px">' + a.riskScore + '</div>' +
       '<div style="flex:1"><div style="font-weight:600;font-size:13.5px"><i class="ti ti-sparkles" style="color:var(--accent-d)"></i> Why this was flagged</div><div style="font-size:12px;color:var(--text2);margin-top:2px">' + esc(a.reason) + '.</div>' +
-      '<div style="font-size:11px;color:var(--text3);margin-top:3px">Rules + ML/AI · confidence ' + Math.round(a.confidence * 100) + '% · scored during payment verification, before disbursement</div></div></div>' +
-      sig + '</div>' +
+      '<div style="font-size:11px;color:var(--text3);margin-top:3px">Rules + ML/AI · confidence ' + Math.round(a.confidence * 100) + '% · scored during payment verification, before disbursement · alert threshold ' + T.ALERT + '</div></div></div>' +
+      factors(a) + sig + '</div>' +
       '<div style="flex:1;min-width:230px;display:flex;flex-direction:column;gap:12px">' +
       '<div class="card" style="margin:0;background:' + rec[2] + ';border-color:transparent"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:' + rec[1] + '">Model recommends</div><div style="font-weight:600;font-size:15px;color:' + rec[1] + ';margin-top:3px"><i class="ti ti-' + rec[3] + '"></i> ' + rec[0] + '</div>' +
       '<button class="btn" id="r-explain" style="margin-top:9px;font-size:11.5px;background:#fff"><i class="ti ti-sparkles"></i> Explain in full</button></div>' +
+      agencyFlags(a) +
       '<div class="card" style="margin:0"><div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Payment</div>' +
       '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span>' + esc(a.prog.name) + '</span></div>' +
       '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:var(--text2)"><span>Certified by ' + esc(T.AGENCIES[a.agency].name) + '</span></div>' +
       (a.program === "REF" && a.network === "N01" ? '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span>Peer median</span><span class="mono">' + usd(T.PEER_MEDIAN) + '</span></div>' : '') +
       '<div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;border-top:0.5px solid var(--border2);margin-top:4px;padding-top:5px"><span>Amount</span><span class="mono">' + usd(a.amount) + '</span></div></div>' +
       '</div></div>';
+  }
+
+  // what drives the score: the flagged signals and TrackLight findings, weighted
+  // high 3 · medium 2, sharing the score above a base of 10
+  function factors(a) {
+    var f = (a.signals || []).filter(function (s) { return s.sev !== "low"; }).map(function (s) { return { t: s.label, w: s.sev === "high" ? 3 : 2, src: s.src }; });
+    var seen = f.map(function (x) { return x.src; }).join(" ");
+    T.tlFor(a.id).forEach(function (x) { if (x.st === "fail" && x.k !== "network" && seen.indexOf("TrackLight") < 0) f.push({ t: x.t, w: 2, src: "TrackLight" }); });
+    if (!f.length || a.riskScore < 30) return "";
+    var sum = f.reduce(function (t, x) { return t + x.w; }, 0), pool = a.riskScore - 10;
+    f.sort(function (x, y) { return y.w - x.w; });
+    var top = f.slice(0, 4);
+    return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px"><span style="font-size:10.5px;color:var(--text3);align-self:center">Top factors</span>' + top.map(function (x) {
+      return '<span class="pill" style="background:var(--surface);border:0.5px solid var(--border);color:var(--ink);font-size:10.5px">' + esc(x.t) + ' <b class="mono" style="color:var(--high-tx)">+' + Math.round(pool * x.w / sum) + '</b></span>';
+    }).join("") + '</div>';
+  }
+  // flags other agencies shared that Treasury matched to this payment
+  function agencyFlags(a) {
+    var S = T.signalsFor(a.id); if (!S.length) return "";
+    return '<div class="card" style="margin:0"><div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px"><i class="ti ti-share"></i> Agency flags matched</div>' +
+      S.map(function (s) {
+        var own = s.payment === a.id;
+        return '<div style="padding:6px 0;border-top:0.5px solid var(--border2);font-size:11.5px;line-height:1.45"><div><span class="tag" style="font-size:9.5px">' + s.agency + '</span> <b style="font-weight:500">' + esc(s.kind) + '</b> <span class="muted" style="font-size:10.5px">· ' + esc(s.received.slice(0, 10)) + '</span></div>' +
+          '<div style="color:var(--text2);margin-top:2px">' + (own ? esc(s.detail) : esc(s.subject) + ' (' + s.payment + '): ' + esc(s.match)) + '</div></div>';
+      }).join("") + '</div>';
   }
 
   function checks(a) {
@@ -155,9 +201,28 @@
       }).join("") + '</div>';
     };
     var allPass = L.every(function (v) { return v[2][0] === "pass"; }), anyFail = P.some(function (v) { return v[2][0] === "fail"; });
-    return '<div class="card" style="margin:0"><div style="font-weight:500;font-size:13px;margin-bottom:8px"><i class="ti ti-list-check" style="color:var(--accent-d)"></i> List checks <span class="muted" style="font-weight:400;font-size:11px">· run on every payment before Treasury disburses it</span></div>' + grid(L) +
+    var dnp = T.DNP.map(function (g) {
+      var hit = g.k === "death" && t === "Deceased payee";
+      return row(hit ? "fail" : "pass", g.t, hit ? "Payee deceased 2026-08-30 (SSA Numident)" : "No match", g.src);
+    }).join("") + row(t === "Vendor bank change" ? "fail" : "pass", "Account ownership", t === "Vendor bank change" ? "Account belongs to a different business" : "In the payee's name", "Account verification") + row("pass", "TIN", "Valid and matches the payee", "TIN verification");
+    var tl = T.tlFor(a.id), hits = tl.filter(function (f) { return f.st !== "pass"; }).length;
+    var tlRows = tl.map(function (f) { return row(f.st, f.t, f.text, f.src); }).join("");
+    var col = function (icon, title, sub, badge, body, tone) {
+      return '<div style="flex:1;min-width:300px;border:0.5px solid var(--border);border-radius:9px;overflow:hidden"><div style="padding:9px 12px;background:' + tone + ';display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-weight:600;font-size:12.5px"><i class="ti ti-' + icon + '"></i> ' + title + '</div><div style="font-size:10.5px;color:var(--text2)">' + sub + '</div></div>' + badge + '</div><div style="padding:2px 12px 6px">' + body + '</div></div>';
+    };
+    var dnpOk = t !== "Deceased payee" && t !== "Vendor bank change";
+    return '<div class="card" style="margin:0"><div style="display:flex;gap:10px;flex-wrap:wrap">' +
+      col("shield-check", "Do Not Pay", "Run on every payment today", '<span class="pill" style="background:' + (dnpOk ? "var(--low-bg);color:var(--low-tx)" : "var(--high-bg);color:var(--high-tx)") + '">' + (dnpOk ? "All passed" : "Match") + '</span>', dnp, "var(--surface)") +
+      col("radar-2", "TrackLight due diligence", "What TrackLight adds beyond Do Not Pay", '<span class="pill" style="background:' + (hits ? "var(--high-bg);color:var(--high-tx)" : "var(--low-bg);color:var(--low-tx)") + '">' + (hits ? hits + " finding" + (hits > 1 ? "s" : "") : "No findings") + '</span>', tlRows, hits ? "var(--high-bg)" : "var(--surface)") +
+      '</div>' +
+      (dnpOk && hits ? '<div style="margin-top:10px;font-size:12px;line-height:1.5;padding:9px 11px;border-radius:8px;background:var(--accent-l);color:var(--ink)"><i class="ti ti-info-circle" style="color:var(--accent-d)"></i> Every Do Not Pay check passed. TrackLight looks past the lists: who the payee really is, who stands behind the employer, and what\'s on record about them.</div>' : '') +
       '<div style="font-weight:500;font-size:13px;margin:14px 0 8px"><i class="ti ti-affiliate" style="color:var(--accent-d)"></i> Pattern checks <span class="muted" style="font-weight:400;font-size:11px">· this payment against every other payment, across agencies</span></div>' + grid(P) +
       (allPass && anyFail ? '<div style="margin-top:12px;font-size:12px;line-height:1.5;padding:9px 11px;border-radius:8px;background:var(--accent-l);color:var(--ink)"><i class="ti ti-info-circle" style="color:var(--accent-d)"></i> It passed every list check: the identity is real and the account is in that name. The pattern checks look at what\'s around the payment, and that\'s where it fails.</div>' : '') + '</div>';
+  }
+
+  function row(st, title, text, src) {
+    var c = { pass: ["circle-check", "var(--low)"], fail: ["circle-x", "var(--high)"], warn: ["alert-triangle", "var(--med)"] }[st];
+    return '<div style="display:flex;gap:9px;padding:7px 0;border-top:0.5px solid var(--border2)"><i class="ti ti-' + c[0] + '" style="color:' + c[1] + ';font-size:16px;margin-top:1px"></i><div style="flex:1;min-width:0"><div style="font-size:12px"><b style="font-weight:500">' + esc(title) + '</b>' + (st === "pass" ? ' <span style="color:var(--text2)">· ' + esc(text) + '</span>' : '') + '</div>' + (st !== "pass" ? '<div style="font-size:11.5px;color:var(--ink);line-height:1.4;margin-top:1px">' + esc(text) + '</div>' : '') + '<div style="font-size:10px;color:var(--text3);margin-top:1px">' + esc(src) + '</div></div></div>';
   }
 
   // ---- address: every federal payee at the mailbox ----
@@ -239,6 +304,7 @@
     var ev = [[a.submitted, "Certified", "By " + T.AGENCIES[a.agency].name], [a.submitted, "Verified", "Risk " + a.riskScore + " · " + a.reason]];
     if (a.paidDate) ev.push([a.paidDate, "Paid", usd(a.amount) + " to " + a.bank + " " + a.acct]);
     if (a.paidDate && a.network) ev.push([a.paidDate, "Flagged post-payment", "Linked to " + T.net(a.network).name]);
+    T.signalsFor(a.id).forEach(function (s) { ev.push([s.received, s.agency + " flag received", s.kind + (s.payment === a.id ? "" : " · " + s.subject + " (" + s.payment + ") · " + s.match)]); });
     var audit = window.APP.state.audit.filter(function (x) { return (x.detail || "").indexOf(a.id) >= 0; }).slice().reverse().map(function (x) { return [window.APP.fmtTs(x.ts), x.action.replace(/_/g, " ").toLowerCase().replace(/^./, function (c) { return c.toUpperCase(); }), x.detail + " · " + x.user]; });
     return '<div class="card" style="margin:0"><div style="font-weight:500;font-size:13px;margin-bottom:6px"><i class="ti ti-timeline" style="color:var(--accent-d)"></i> History</div>' +
       ev.concat(audit).map(function (e) { return '<div style="display:flex;gap:10px;padding:6px 0;border-top:0.5px solid var(--border2);font-size:12px"><span class="mono" style="color:var(--text3);width:120px;flex:none">' + esc(e[0] || "") + '</span><span style="font-weight:500;width:150px;flex:none">' + esc(e[1]) + '</span><span style="color:var(--text2)">' + esc(e[2]) + '</span></div>'; }).join("") + '</div>';
@@ -247,15 +313,19 @@
   // ---- decision ----
   function decision(a) {
     if (a.mode === "prepay") {
-      var d = window.APP.prepayDecisionFor(a.id);
-      return '<div class="card" style="margin:0"><div style="font-weight:500;font-size:13px;margin-bottom:8px">Pre-payment decision</div>' +
-        (d ? '<div style="font-size:12.5px">' + { pay: "Released for disbursement", hold: "Held pending verification", deny: "Returned to the certifying agency" }[d.action] + ' · ' + esc(window.APP.reasonLabel(d.action, d.reason)) + '</div>'
-          : '<div style="display:flex;gap:8px">' + ["pay", "hold", "deny"].map(function (x) { return '<button class="btn r-pp" data-act="' + x + '" style="flex:1;justify-content:center">' + { pay: "Pay", hold: "Hold — verify", deny: "Return to agency" }[x] + '</button>'; }).join("") + '</div>') + '</div>';
+      var d = window.APP.prepayDecisionFor(a.id), h = T.handoff(a.id), refer = a.recommendedAction !== "pay";
+      return '<div class="card" style="margin:0"><div style="font-weight:500;font-size:13px;margin-bottom:3px">Pre-payment action</div>' +
+        '<div style="font-size:11.5px;color:var(--text2);margin-bottom:10px">Treasury releases payments with no concerns. For the rest, only ' + esc(T.AGENCIES[a.agency].name) + ' can stop the payment, so Treasury sends a recommendation and ' + a.agency + ' decides.</div>' +
+        (d && d.action === "pay" ? '<div style="font-size:12.5px"><i class="ti ti-check" style="color:var(--low)"></i> Released for disbursement · ' + esc(window.APP.reasonLabel("pay", d.reason)) + '</div>'
+          : h ? '<div style="font-size:12.5px">' + (h.decision ? '<i class="ti ti-' + T.agencyDecision(a, h.decision.c).icon + '"></i> ' + esc(T.agencyDecision(a, h.decision.c).t) + ' by ' + a.agency + ' · ' + esc(T.agencyReasonLabel(h.decision.reason)) : '<i class="ti ti-clock"></i> Sent to ' + a.agency + ': ' + esc(T.recLabel(a, h.rec)) + ' · awaiting ' + a.agency + '\'s decision') + '</div><button class="btn r-pkg" style="margin-top:10px"><i class="ti ti-package"></i> View package</button>'
+          : '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button class="seg r-pp" data-act="pay" style="flex:1"><i class="ti ti-check"></i> Release<div class="sub">no concerns · pays on schedule</div></button>' +
+          '<button class="seg r-pp" data-act="refer" style="flex:1;' + (refer ? "border-color:var(--accent);background:var(--accent-l)" : "") + '"><i class="ti ti-send"></i> Refer to ' + a.agency + (refer ? ' <span class="pill" style="background:var(--accent);color:#fff;font-size:9.5px">model</span>' : '') + '<div class="sub">recommend ' + esc(T.recLabel(a, T.defaultRec(a)).toLowerCase()) + ' · ' + a.agency + ' decides</div></button></div>') + '</div>';
     }
     var dec = window.APP.decisionFor(a.id);
-    if (dec) return '<div class="card" style="margin:0"><div style="font-weight:500;font-size:13px;margin-bottom:6px">Decision recorded</div><div style="font-size:12.5px">' + esc({ confirm: "Reclaim · recover", dismiss: "Cleared — payment stands", escalate: "Referred" }[dec.outcome]) + ' · ' + esc(window.APP.reasonLabel(dec.outcome, dec.reason)) + '</div><div style="font-size:12px;color:var(--text2);margin-top:4px">' + (dec.reviewState === "pending" ? "Waiting for supervisor review (Karen Boyd)." : dec.reviewState === "approved" ? "Approved by the supervisor." : "") + '</div></div>';
-    return '<div class="card" style="margin:0">' +
-      '<div style="font-weight:500;font-size:13px;margin-bottom:8px">Decision</div>' +
+    if (dec) return agencyCard(a) + '<div class="card" style="margin:0"><div style="font-weight:500;font-size:13px;margin-bottom:6px">Decision recorded</div><div style="font-size:12.5px">' + esc({ confirm: "Reclaim · recover", dismiss: "Cleared — payment stands", escalate: "Referred" }[dec.outcome]) + ' · ' + esc(window.APP.reasonLabel(dec.outcome, dec.reason)) + '</div><div style="font-size:12px;color:var(--text2);margin-top:4px">' + (dec.reviewState === "pending" ? "Waiting for supervisor review (Karen Boyd)." : dec.reviewState === "approved" ? "Approved by the supervisor." : "") + '</div></div>';
+    return agencyCard(a) + '<div class="card" style="margin:0">' +
+      '<div style="font-weight:500;font-size:13px;margin-bottom:8px">Treasury\'s decision</div>' +
       '<div style="display:flex;gap:8px">' +
       '<button class="seg" data-d="c">Reclaim<div class="sub">improper payment · recover from the bank</div></button>' +
       '<button class="seg" data-d="d">Clear<div class="sub">payment proper · it stands</div></button>' +
@@ -267,6 +337,13 @@
       '<div id="r-case" style="margin-top:12px"></div>' +
       '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn primary" id="r-submit"><i class="ti ti-send"></i> Submit to supervisor</button></div></div></div>';
   }
+  // post-payment: recovering the money is the agency's call too — send it a package
+  function agencyCard(a) {
+    var h = T.handoff(a.id);
+    return '<div class="card" style="margin:0 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><i class="ti ti-send" style="font-size:20px;color:var(--accent-d)"></i><div style="flex:1;min-width:220px"><div style="font-weight:500;font-size:13px">' + (h ? (h.decision ? esc(T.AGENCIES[a.agency].name) + ': ' + esc(T.agencyDecision(a, h.decision.c).t) : "Sent to " + esc(T.AGENCIES[a.agency].name) + " · awaiting its decision") : "Recommend an action to " + esc(T.AGENCIES[a.agency].name)) + '</div>' +
+      '<div style="font-size:11.5px;color:var(--text2)">' + (h ? 'Treasury recommends: ' + esc(T.recLabel(a, h.rec)) : a.agency + ' certified this payment and decides on recovery. Treasury shares what it found, with a recommendation.') + '</div></div>' +
+      '<button class="btn' + (h ? "" : " primary") + ' r-pkg"><i class="ti ti-' + (h ? "package" : "send") + '"></i> ' + (h ? "View package" : "Send to " + a.agency) + '</button></div>';
+  }
   function caseBox(a, outcome) {
     if (outcome === "d") return "";
     var ring = a.network === "N01";
@@ -276,7 +353,8 @@
       opt("new", "Open a new case", "This payment alone", !ring);
   }
   function wireDecision(a) {
-    document.querySelectorAll(".r-pp").forEach(function (b) { b.onclick = function () { window.APP.prepayDecide(a.id, b.getAttribute("data-act")); window.APP.nav("claim", { id: a.id }); }; });
+    document.querySelectorAll(".r-pp").forEach(function (b) { b.onclick = function () { if (b.getAttribute("data-act") === "refer") return window.APP.openHandoff(a.id); window.APP.prepayDecide(a.id, "pay"); window.APP.nav("claim", { id: a.id }); }; });
+    document.querySelectorAll(".r-pkg").forEach(function (b) { b.onclick = function () { window.APP.openHandoff(a.id); }; });
     var form = document.getElementById("r-dform"); if (!form) return;
     var outcome = null;
     document.querySelectorAll(".seg").forEach(function (s) {
