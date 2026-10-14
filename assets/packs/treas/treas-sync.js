@@ -51,8 +51,10 @@
     window.scrollTo(0, y);
   }
 
+  function linked() { if (!APP.state.syncLinked) { APP.state.syncLinked = true; if (APP.state.sysWindow) refresh(); } }
   if (ch) ch.onmessage = function (e) {
     var m = e.data || {};
+    linked();
     if (m.type === "update") {
       if (m.ref) applyRef(m.ref); else apply(m.item);
       if (m.audit) { m.audit.ts = new Date(m.audit.ts); APP.state.audit.unshift(m.audit); }
@@ -60,7 +62,7 @@
       toast(m.note);
     } else if (m.type === "hello") {
       var ids = Object.keys(APP.state.handoffs), keys = Object.keys(APP.state.netRefs);
-      if (ids.length || keys.length) send({ type: "state", items: ids.map(pack), refs: keys.map(packRef) });
+      send({ type: "state", items: ids.map(pack), refs: keys.map(packRef) }); // answer even when empty, so the other window knows it's linked
     } else if (m.type === "state") {
       var fresh = (m.items || []).filter(function (it) { return !T.handoff(it.id) || (it.h.decision && !T.handoff(it.id).decision); });
       fresh.forEach(apply);
@@ -103,9 +105,12 @@
   // the agency's system in its own window
   APP.agencyWindowUrl = function (agency) { return location.pathname + "?uc=treas&sys=" + agency.toLowerCase(); };
   APP.openAgencyWindow = function (agency) {
-    var w = window.open(APP.agencyWindowUrl(agency), "pi-agency-" + agency, "width=1280,height=860");
-    if (!w) APP.openAgencyPortal(agency); // pop-ups blocked: same window
+    var w = null;
+    try { w = window.open(APP.agencyWindowUrl(agency), "pi-agency-" + agency, "width=1280,height=860"); } catch (e) {}
+    if (!w) { toast("Pop-ups are blocked here, so " + agency + "'s system opens in this tab instead. Allow pop-ups for the two-window demo."); APP.openAgencyPortal(agency); }
   };
+  // what the agency window shows about its link to Treasury's window
+  APP.syncStatus = function () { return !ch ? { ok: false, t: "No window link in this browser" } : APP.state.syncLinked ? { ok: true, t: "Linked to Treasury's window" } : { ok: false, t: "Not linked: open Treasury in this browser" }; };
 
   function toast(text) {
     if (!text) return;

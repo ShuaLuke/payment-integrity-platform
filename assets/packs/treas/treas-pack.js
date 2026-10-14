@@ -515,7 +515,28 @@
     "#view{padding-bottom:84px}.tl-mark{display:inline-flex;align-items:center;gap:4px;font-weight:700;letter-spacing:-.01em;color:#0e5a63;background:#e3f6f4;border:0.5px solid #9fd9d2;border-radius:5px;padding:1px 7px 1px 6px;font-size:11px;white-space:nowrap}.tl-mark .tl-sub{font-weight:500;color:#2f6d73;margin-left:3px}" +
     "body[data-sys=agency] .navitems,body[data-sys=agency] #mode-toggle,body[data-sys=agency] #reset-demo,body[data-sys=agency] .conn,body[data-sys=agency] #role-switch,body[data-sys=agency] #prog-switch,body[data-sys=agency] .brand-name,body[data-sys=agency] #cp-fab,body[data-sys=agency] #cp-panel{visibility:hidden}";
   document.head.appendChild(st);
-  var baseNav = APP.nav;
-  APP.nav = function (view, params) { document.body.setAttribute("data-sys", view === "agencyportal" ? "agency" : "treasury"); return baseNav(view, params); };
+  // browser Back and Forward work: every screen is a history entry (a re-render of the
+  // same screen replaces its entry instead of piling up)
+  var baseNav = APP.nav, popping = false;
+  APP.nav = function (view, params) {
+    document.body.setAttribute("data-sys", view === "agencyportal" ? "agency" : "treasury");
+    var r = baseNav(view, params);
+    if (!popping) {
+      var st = { view: view, params: params || {}, allegationId: APP.state.allegationId || null, mode: APP.state.mode };
+      var same = history.state && history.state.view === view && JSON.stringify(history.state.params) === JSON.stringify(st.params);
+      try { (same ? history.replaceState : history.pushState).call(history, st, "", location.pathname + location.search + "#" + view); } catch (e) {}
+    }
+    return r;
+  };
+  window.addEventListener("popstate", function (e) {
+    var st = e.state; if (!st || !st.view) return;
+    popping = true;
+    try {
+      if (st.allegationId) APP.state.allegationId = st.allegationId;
+      if (st.mode && st.mode !== APP.state.mode) { APP.state.mode = st.mode; APP.setModeHeader(); }
+      if (st.view === "agencyportal" && APP.state.view !== "agencyportal") APP.state._preAgencySnap = APP.state._preAgencySnap || APP.snapshot();
+      APP.nav(st.view, st.params);
+    } finally { popping = false; }
+  });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", chrome); else chrome();
 })();

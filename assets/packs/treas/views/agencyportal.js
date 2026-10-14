@@ -35,6 +35,7 @@
         '<div><div style="font-weight:600;font-size:15px;letter-spacing:-0.01em">' + esc(ag.name) + ' · Payment integrity workspace</div>' +
         '<div style="font-size:11.5px;color:#c6d8d4">The agency\'s own system · a separate instance · receives Treasury packages in the shared schema</div></div>' +
         '<span style="flex:1"></span>' +
+        (window.APP.state.sysWindow && window.APP.syncStatus ? (function () { var st = window.APP.syncStatus(); return '<span class="pill" title="' + esc(st.t) + '" style="background:rgba(255,255,255,0.14);color:#e2f2ee;margin-right:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + (st.ok ? "#42be65" : "#a8a8a8") + '"></span> ' + esc(st.t) + '</span>'; })() : '') +
         '<span class="pill" style="background:rgba(255,255,255,0.14);color:#e2f2ee"><i class="ti ti-flask"></i> Simulated agency system</span></div>' +
         (signedIn ? workspace(agency, u, id, ref) : login(agency, ag, u)) +
         '</div></div>';
@@ -42,7 +43,9 @@
     }
   };
 
-  function rerender(agency, id, ref) { window.Views.agencyportal.render(document.getElementById("view"), { agency: agency, id: id, ref: ref }); }
+  // through the router, so Back/Forward work inside the agency's system and a live
+  // update re-renders the item in view, not the inbox
+  function rerender(agency, id, ref) { window.APP.nav("agencyportal", { agency: agency, id: id || undefined, ref: ref || undefined }); }
 
   function login(agency, ag, u) {
     return '<div class="card" style="max-width:420px;margin:30px auto 0;padding:22px 24px">' +
