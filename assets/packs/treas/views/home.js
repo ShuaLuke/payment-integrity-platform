@@ -24,8 +24,19 @@
       '<div style="padding:10px 14px;border-bottom:0.5px solid var(--border2);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><div style="font-weight:600;font-size:13.5px"><i class="ti ti-send" style="color:var(--accent-d)"></i> Recommendations to agencies <span class="muted" style="font-weight:400;font-size:11px">· last 30 days</span></div><div style="font-size:11.5px;color:var(--text2)">Treasury recommends; the certifying agency decides. This is what came back.</div></div>' + T.laneTag("flag", T.SCHEMA.name.replace(/ \(.*$/, ""), true) + '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px">' +
       tile("Sent", tot.sent, tot.today ? tot.today + " today" : "across 5 agencies") + tile("Acted on", tot.acted, "stopped or reclaimed", "var(--high-bg)") + tile("Released · no action", tot.released, "the agency verified the payee") + tile("Awaiting the agency", tot.pending, "or asked Treasury for more", tot.pending ? "var(--med-bg)" : null) +
-      tile("Stopped or recovered", T.bigUsd(tot.usd), "on Treasury's recommendation", "var(--low-bg)") + tile("Median response", tot.days.toFixed(1) + " days", "from package to decision") + '</div>' +
+      tile("Stopped or recovered", T.bigUsd(tot.usd), "on Treasury's recommendation", "var(--low-bg)") + tile("Median response", tot.days.toFixed(1) + " days", "from package to decision") + '</div>' + refsStrip() +
       '<table><thead><tr><th>Certifying agency</th><th class="right">Sent</th><th class="right">Acted on</th><th class="right">Released</th><th class="right">Pending</th><th class="right">Stopped / recovered</th><th class="right">Response</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  // network referrals: the ring sent to every agency in it, and what came back
+  function refsStrip() {
+    var refs = Object.keys(window.APP.state.netRefs || {}).map(function (k) { return window.APP.state.netRefs[k]; });
+    if (!refs.length) return '<div style="padding:0 14px 10px;font-size:11.5px;color:var(--text2)"><i class="ti ti-affiliate" style="color:var(--accent-d)"></i> Network referrals: none sent yet. Refer a whole network from its network view, or every network from the map.</div>';
+    var cases = refs.filter(function (r) { return r.decision && r.decision.c === "case"; }), held = cases.reduce(function (t, r) { return t + r.pending; }, 0), usdU = cases.reduce(function (t, r) { return t + r.atRisk; }, 0);
+    return '<div style="margin:0 14px 10px;padding:8px 11px;border-radius:8px;background:var(--accent-l);display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12px"><b><i class="ti ti-affiliate" style="color:var(--accent-d)"></i> Network referrals</b>' +
+      '<span>' + refs.length + ' sent to ' + refs.map(function (r) { return r.agency; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(", ") + '</span>' +
+      (cases.length ? '<span><b style="color:var(--high-tx)">' + cases.length + ' case' + (cases.length > 1 ? 's' : '') + ' opened</b> · ' + held + ' pending payment' + (held !== 1 ? 's' : '') + ' held · ' + T.bigUsd(usdU) + ' under review</span>' : '<span style="color:var(--text2)">awaiting the agencies</span>') +
+      refs.filter(function (r) { return r.decision && r.decision.c !== "case"; }).map(function (r) { return '<span style="color:var(--text2)">' + r.agency + ': ' + esc(T.netDecision(r.decision.c).t.toLowerCase()) + '</span>'; }).join("") + '</div>';
   }
 
   window.Views.home = {

@@ -15,6 +15,16 @@
     var h = T.handoff(id), l = T.lead(id);
     return { id: id, h: h, status: l ? l.status : null, pd: APP.state.prepayDecisions[id] || null };
   }
+  function packRef(key) {
+    var r = T.netRef(key);
+    return { key: key, r: r, leads: (r ? r.ids : []).map(function (id) { var l = T.lead(id); return l ? { id: id, status: l.status, pd: APP.state.prepayDecisions[id] || null } : null; }).filter(Boolean) };
+  }
+  function reviveTrail(o) { if (o && o.trail) o.trail.forEach(function (t) { t.ts = new Date(t.ts); }); if (o && o.opened) o.opened = new Date(o.opened); return o; }
+  function applyRef(item) {
+    if (!item || !item.r) return;
+    var r = reviveTrail(revive(item.r)); APP.state.netRefs[item.key] = r;
+    item.leads.forEach(function (x) { var l = T.lead(x.id); if (l) l.status = x.status; if (x.pd) APP.state.prepayDecisions[x.id] = revive(x.pd); });
+  }
   function revive(o) {
     if (!o) return o;
     ["sentAt", "ts"].forEach(function (k) { if (o[k]) o[k] = new Date(o[k]); });
@@ -24,7 +34,7 @@
   }
   function apply(item) {
     if (!item || !item.h) return;
-    APP.state.handoffs[item.id] = revive(item.h);
+    APP.state.handoffs[item.id] = reviveTrail(revive(item.h));
     var l = T.lead(item.id); if (l && item.status) l.status = item.status;
     if (item.pd) APP.state.prepayDecisions[item.id] = revive(item.pd);
   }
@@ -35,7 +45,7 @@
     var f = document.activeElement;
     if (f && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName) && f.type !== "radio") return;
     var v = APP.state.view;
-    if (["home", "queue", "claim", "handoff", "agencyportal"].indexOf(v) < 0) return;
+    if (["home", "queue", "claim", "handoff", "netreferral", "network", "audit", "agencyportal"].indexOf(v) < 0) return;
     var y = window.scrollY;
     APP.nav(v, APP.state._navParams || { id: APP.state.allegationId });
     window.scrollTo(0, y);
@@ -44,17 +54,19 @@
   if (ch) ch.onmessage = function (e) {
     var m = e.data || {};
     if (m.type === "update") {
-      apply(m.item);
+      if (m.ref) applyRef(m.ref); else apply(m.item);
       if (m.audit) { m.audit.ts = new Date(m.audit.ts); APP.state.audit.unshift(m.audit); }
       refresh();
       toast(m.note);
     } else if (m.type === "hello") {
-      var ids = Object.keys(APP.state.handoffs);
-      if (ids.length) send({ type: "state", items: ids.map(pack) });
+      var ids = Object.keys(APP.state.handoffs), keys = Object.keys(APP.state.netRefs);
+      if (ids.length || keys.length) send({ type: "state", items: ids.map(pack), refs: keys.map(packRef) });
     } else if (m.type === "state") {
       var fresh = (m.items || []).filter(function (it) { return !T.handoff(it.id) || (it.h.decision && !T.handoff(it.id).decision); });
       fresh.forEach(apply);
-      if (fresh.length) refresh();
+      var freshR = (m.refs || []).filter(function (it) { return !T.netRef(it.key) || (it.r.decision && !T.netRef(it.key).decision); });
+      freshR.forEach(applyRef);
+      if (fresh.length || freshR.length) refresh();
     } else if (m.type === "reset") location.reload();
   };
 
@@ -69,6 +81,20 @@
     baseDecide(id, decision, reason, note);
     var h = T.handoff(id), l = T.lead(id);
     if (h && h.decision) send({ type: "update", item: pack(id), audit: lastAudit(), note: h.agency + ": " + T.agencyDecision(l, decision).t + " · " + id });
+  };
+  var baseSendRef = APP.sendNetReferral, baseDecideRef = APP.agencyDecideRef, baseOpened = APP.agencyOpened;
+  APP.sendNetReferral = function (scope, net, ids, recs, note) {
+    var out = baseSendRef(scope, net, ids, recs, note);
+    out.forEach(function (r) { send({ type: "update", ref: packRef(r.key), audit: lastAudit(), note: "Treasury sent " + r.id + " to " + r.agency }); });
+    return out;
+  };
+  APP.agencyDecideRef = function (key, decision, reason, note) {
+    baseDecideRef(key, decision, reason, note);
+    var r = T.netRef(key); if (r && r.decision) send({ type: "update", ref: packRef(key), audit: lastAudit(), note: r.agency + ": " + T.netDecision(decision).t + " · " + r.id });
+  };
+  APP.agencyOpened = function (obj, agency) {
+    var was = obj && obj.opened; baseOpened(obj, agency);
+    if (obj && !was && obj.opened) send({ type: "update", ref: obj.key ? packRef(obj.key) : undefined, item: obj.key ? undefined : pack(obj.id), audit: lastAudit(), note: null });
   };
   // remember the params of the screen in view, so a refresh lands on the same thing
   var baseNav = APP.nav;

@@ -51,6 +51,7 @@
         cv.style.height = "520px";
         lg.innerHTML = legendHtml(m);
         bx.innerHTML = boxesHtml(F.net(scn), m);
+        var rf = document.getElementById("n-refer"); if (rf) rf.onclick = function () { window.APP.openNetReferral("network", scn); };
         drawLayered(cv, m, 520);
       }
       mount.querySelectorAll(".nscn").forEach(function (b) { b.onclick = function () { paint(b.getAttribute("data-scn")); }; });
@@ -89,7 +90,7 @@
       '<div class="card" style="padding:0;overflow:hidden">' +
       '<div style="padding:9px 12px;border-bottom:0.5px solid var(--border2);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">' +
       '<div style="font-weight:500;font-size:12.5px"><i class="ti ti-chart-dots-3" style="color:var(--accent-d)"></i> Everything connected <span class="muted" style="font-weight:400;font-size:10.5px">· ' + S.networks + ' networks · ' + big(S.atRisk) + ' at risk · ' + F.BRIDGES.length + ' cross-network links · ' + F.PLAN.states + ' states</span></div>' +
-      '<div style="font-size:10.5px;color:var(--text3)"><i class="ti ti-pointer"></i> Delmont in the middle, the networks linked to it beside it, the rest grouped by scheme · click a hub to open it</div></div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div style="font-size:10.5px;color:var(--text3)"><i class="ti ti-pointer"></i> Delmont in the middle, the networks linked to it beside it · click a hub to open it</div>' + allReferBtn() + '</div></div>' +
       '<div id="nv-map" style="position:relative;height:540px;background:var(--surface)"></div>' +
       '<div class="legend" style="margin:0;padding:8px 12px;border-top:0.5px solid var(--border2)">' + mapLegend() + '</div></div>' +
       '<div class="card"><div style="font-weight:500;font-size:12.5px;margin-bottom:4px"><i class="ti ti-category" style="color:var(--accent-d)"></i> At risk by scheme type</div>' + bars + '</div>' +
@@ -97,6 +98,10 @@
       '<div style="display:flex;gap:2px;flex-wrap:wrap;background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:2px">' + chip("", "All") + F.SCHEME_ORDER.map(function (k) { return chip(k, F.SCHEMES[k].short); }).join("") + '</div></div>' +
       '<div style="overflow-x:auto"><table style="width:100%"><thead><tr><th>Network</th><th>Scheme</th><th>Agencies</th><th class="right">Payees</th><th class="right">At risk · ' + F.PLAN.fys + '</th><th>Status</th><th class="right">Risk</th></tr></thead><tbody id="nv-body">' + rowsHtml() + '</tbody></table></div></div>' +
       '</div>';
+  }
+  function allReferBtn() {
+    var refs = F.netRefsOf("all"), dec = refs.filter(function (r) { return r.decision; }).length;
+    return '<button class="btn' + (refs.length ? '' : ' primary') + '" id="nv-refer-all" style="font-size:11px;padding:3px 9px"><i class="ti ti-' + (refs.length ? 'package' : 'send') + '"></i> ' + (refs.length ? 'Referred to ' + refs.length + ' agencies' + (dec ? ' · ' + dec + ' acted' : '') : 'Refer every network to its agencies') + '</button>';
   }
   function rowsHtml() {
     return F.NETS.filter(function (n) { return !ovFilter.scheme || n.scheme === ovFilter.scheme; }).slice().sort(function (a, b) { return b.atRisk - a.atRisk; }).map(function (n) {
@@ -122,6 +127,7 @@
       };
     });
     drawMap(ov.querySelector("#nv-map"), paint);
+    var ra = ov.querySelector("#nv-refer-all"); if (ra) ra.onclick = function () { window.APP.openNetReferral("all"); };
   }
 
   // ---------- the funnel: one payment → every network ----------
@@ -278,9 +284,21 @@
         Object.keys(BADGE).map(function (k) { return '<span class="lg"><span style="font-size:8.5px;font-weight:700;letter-spacing:.04em;color:' + BADGE[k].c + ';border:1px solid ' + BADGE[k].c + ';border-radius:3px;padding:0 3px;background:#fff">' + BADGE[k].t + '</span></span>'; }).join("") +
         '<span class="lg" style="color:var(--text3)">Badges and links: ' + F.tlMark("link analysis") + '</span>' : '');
   }
+  // refer the network to every agency in it; after sending, what each agency did
+  function referBox(n) {
+    var refs = F.netRefsOf("network", n.id), split = F.netSplit("network", n.id);
+    var chips = split.map(function (b) {
+      var r = refs.filter(function (x) { return x.agency === b.agency; })[0], dd = r && r.decision ? F.netDecision(r.decision.c) : null;
+      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:0.5px solid var(--border2);font-size:11.5px"><span><span class="tag mono" style="font-size:10px">' + b.agency + '</span> ' + b.payments.toLocaleString() + ' payments · ' + F.bigUsd(b.atRisk) + (b.pending ? ' · <b style="color:var(--high-tx)">' + b.pending + ' not yet paid</b>' : '') + '</span>' +
+        '<span style="white-space:nowrap;color:' + (dd ? (dd.tone === "high" ? "var(--high-tx)" : "var(--med-tx)") : r ? "var(--accent-d)" : "var(--text3)") + ';font-weight:' + (dd || r ? 600 : 400) + '">' + (dd ? esc(dd.status.replace(/ by $/, "")) : r ? "Sent · awaiting " + b.agency : "not yet referred") + '</span></div>';
+    }).join("");
+    return '<div style="flex:1;min-width:280px;background:var(--card);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px"><div style="font-weight:600;font-size:12.5px"><i class="ti ti-send" style="color:var(--accent-d)"></i> Refer the whole network</div>' +
+      '<button class="btn' + (refs.length ? '' : ' primary') + '" id="n-refer" style="font-size:11px;padding:3px 9px"><i class="ti ti-' + (refs.length ? 'package' : 'send') + '"></i> ' + (refs.length ? 'View referrals' : 'Refer to ' + split.map(function (b) { return b.agency; }).join(", ")) + '</button></div>' +
+      '<div style="font-size:11px;color:var(--text2);margin-bottom:4px">One referral per certifying agency: the ring, that agency\'s payments in it, and what to do.</div>' + chips + '</div>';
+  }
   function boxesHtml(n, m) {
     if (m.core) {
-      return '<div style="flex:1;background:var(--high-bg);border:0.5px solid #f3c9c9;border-radius:8px;padding:10px 12px"><div style="font-weight:600;font-size:12.5px;color:var(--high-tx);margin-bottom:5px"><i class="ti ti-alert-triangle"></i> One organizer, ' + n.payees + ' payees</div>' +
+      return referBox(n) + '<div style="flex:1;background:var(--high-bg);border:0.5px solid #f3c9c9;border-radius:8px;padding:10px 12px"><div style="font-weight:600;font-size:12.5px;color:var(--high-tx);margin-bottom:5px"><i class="ti ti-alert-triangle"></i> One organizer, ' + n.payees + ' payees</div>' +
         '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">' + F.tlMark() + ' <span class="tag" style="background:var(--card)">1 deceased · 1 in custody · 2 stolen identities · 2 people on two accounts</span><span class="tag">' + F.OPERATOR.batches + ' account batches · 3 banks</span><span class="tag">1 mailbox · ' + F.MAILBOX.payees + ' payees</span><span class="tag">8 W-2 employers · 300 W-2s</span><span class="tag">phone ' + F.OPERATOR.phone + '</span><span class="tag">IRS · SSA · OPM</span></div>' +
         '<div style="font-size:11.5px;color:#5c1a14;line-height:1.5">Every one of these payments passed Do Not Pay, account ownership and TIN checks. In the data they share account batches opened days apart, one mailbox, eight employers formed in the last year and one phone. <b>' + n.payees + ' payees · ' + n.payments + ' payments · ' + big(n.atRisk) + '</b> in the pattern.</div></div>';
     }

@@ -241,10 +241,19 @@
     { a: "N06", b: "N13", type: "Same W-2 employers", detail: "Four employers on the Tristate ring's returns also appear on the Piedmont W-2 mill's." },
     { a: "N05", b: "N10", type: "Same devices", detail: "The same three devices enrolled accounts in both clusters, per the banks' responses to reclamation requests." }
   ];
+  // how each network's payments split across the agencies that certified them
+  // (Delmont explicit; the rest proportional). pending = certified, not yet disbursed.
+  var SPLIT = { N01: { IRS: { payments: 612, atRisk: 5600000, pending: 41 }, SSA: { payments: 220, atRisk: 1100000, pending: 0 }, OPM: { payments: 104, atRisk: 700000, pending: 0 } } };
   var AVG = { refund: 18000, redirect: 2200, vendor: 260000, mule: 9000 };
   var PLAN = { fys: "Sep 2025 – Oct 2026", states: 23, minutesPerPayment: 15 };
   NETS.forEach(function (n) {
     n.payments = n.payments || Math.round(n.atRisk / AVG[n.scheme]);
+    if (!SPLIT[n.id]) {
+      var ags = n.programs.map(function (p) { return PROGRAMS[p].agency; }).filter(function (x, i, arr) { return arr.indexOf(x) === i; }), w = ags.map(function (a, i) { return i === 0 ? 1 : 0.45; }), tw = w.reduce(function (t, x) { return t + x; }, 0), sp = {};
+      ags.forEach(function (a, i) { var pay = Math.round(n.payments * w[i] / tw); sp[a] = { payments: pay, atRisk: Math.round(n.atRisk * w[i] / tw / 1000) * 1000, pending: n.scheme === "refund" || n.scheme === "vendor" ? Math.max(1, Math.round(pay * 0.04)) : 0 }; });
+      SPLIT[n.id] = sp;
+    }
+    n.split = SPLIT[n.id];
     n.agencies = n.programs.map(function (p) { return PROGRAMS[p].agency; }).filter(function (x, i, arr) { return arr.indexOf(x) === i; });
     n.crossAgency = n.agencies.length > 1;
     n.crossState = n.states.length > 1;
@@ -387,7 +396,7 @@
 
   var TREAS = {
     PROGRAMS: PROGRAMS, AGENCIES: AGENCIES, MAILBOX: MAILBOX, OPERATOR: OPERATOR, BATCHES: BATCHES, EMPLOYERS: EMPLOYERS, GRAPH: GRAPH, LEADS: LEADS,
-    SCHEMES: SCHEMES, SCHEME_ORDER: SCHEME_ORDER, NETS: NETS, BRIDGES: BRIDGES, PLAN: PLAN, FLOW: FLOW,
+    SCHEMES: SCHEMES, SCHEME_ORDER: SCHEME_ORDER, NETS: NETS, BRIDGES: BRIDGES, PLAN: PLAN, FLOW: FLOW, SPLIT: SPLIT,
     IDENTITY: IDENTITY, AGENCY_STATS: AGENCY_STATS, SIGNALS: SIGNALS, DNP: DNP, TL_GROUPS: TL_GROUPS, TL_CATS: TL_CATS, TL: TL, LANES: LANES, LANE_ORDER: LANE_ORDER, SCHEMA: SCHEMA, AGENCY_USERS: AGENCY_USERS, ALERT: 75,
     signalsFor: function (id) { return SIGNALS.filter(function (s) { return s.payment === id || s.matched.indexOf(id) >= 0; }); },
     tlFor: function (id) { var f = TL[id] || {}; return TL_CATS.map(function (c) { var r = f[c.k]; return { k: c.k, g: c.g, t: c.t, src: c.src, st: r ? r[0] : "pass", text: r ? r[1] : "No adverse findings" }; }); },

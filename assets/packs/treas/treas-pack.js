@@ -46,13 +46,15 @@
     insights: [{ v: "edi", l: "Payment flow" }, { v: "network", l: "Networks" }],
     library: []
   };
-  APP.VIEW_AREA = { home: "home", queue: "casework", claim: "casework", approvals: "casework", handoff: "casework", edi: "insights", network: "insights", agencyportal: "portal" };
+  APP.SUBS.insights.push({ v: "audit", l: "Audit trail" });
+  APP.VIEW_AREA = { home: "home", queue: "casework", claim: "casework", approvals: "casework", handoff: "casework", netreferral: "casework", edi: "insights", network: "insights", audit: "insights", agencyportal: "portal" };
   var baseLabel = APP.labelForSnap;
   APP.labelForSnap = function (s) {
     if (!s) return "Payments";
     if (s.view === "claim") return "Payment " + s.allegationId;
     if (s.view === "handoff") return "Package · " + s.allegationId;
-    var map = { queue: "Payments", home: "Home", approvals: "Approvals", edi: "Payment flow", network: "Networks", agencyportal: "Agency system" };
+    if (s.view === "netreferral") return "Network referral";
+    var map = { queue: "Payments", home: "Home", approvals: "Approvals", edi: "Payment flow", network: "Networks", audit: "Audit trail", agencyportal: "Agency system" };
     return map[s.view] || baseLabel(s);
   };
   APP.backLabel = function () { return APP.state.hist && APP.state.hist.length ? APP.labelForSnap(APP.state.hist[APP.state.hist.length - 1]) : "Payments"; };
@@ -147,6 +149,7 @@
     var l = T.lead(id); if (!l) return null;
     var h = { pkg: "PKG-" + id.replace("PV-", "") + "-01", id: id, agency: l.agency, rec: rec, reason: reason, note: note || "", sentAt: new Date(), sentBy: (APP.ROLES[APP.state.role] || {}).name, status: "sent", decision: null };
     h.payload = T.payload(l, rec, reason);
+    T.trail(h, "treasury", h.sentBy, "Sent to " + T.AGENCIES[l.agency].name + ": " + T.recLabel(l, rec));
     APP.state.handoffs[id] = h;
     if (l.mode === "prepay") {
       APP.state.prepayDecisions[id] = { action: "refer", rec: rec, reason: reason, justification: note || "", ts: h.sentAt, atRisk: l.amount };
@@ -160,6 +163,7 @@
     var u = T.AGENCY_USERS[h.agency], d = T.agencyDecision(l, decision);
     h.decision = { c: decision, reason: reason, note: note || "", ts: new Date(), by: u.name, title: u.title };
     h.status = "decided";
+    T.trail(h, "agency", u.name, d.t + " · " + T.agencyReasonLabel(reason) + (note ? " · “" + note + "”" : ""));
     l.status = d.status + h.agency;
     if (l.mode === "prepay" && APP.state.prepayDecisions[id]) APP.state.prepayDecisions[id].agency = h.decision;
     APP.auditLog("AGENCY_DECISION", "Payment " + id + " · " + T.AGENCIES[h.agency].name + " (" + u.name + "): " + d.t + " · " + T.agencyReasonLabel(reason));
@@ -180,10 +184,120 @@
     return { rows: rows, total: tot };
   };
 
+  // ---- trails: what happened to a package or a referral, on both sides ----
+  T.trail = function (obj, side, who, text) { (obj.trail = obj.trail || []).push({ ts: new Date(), side: side, who: who, text: text }); };
+  // the agency's reviewer opened something: on the trail, mirrored to Treasury's log
+  APP.agencyOpened = function (obj, agency) {
+    if (!obj || obj.opened) return;
+    var u = T.AGENCY_USERS[agency]; obj.opened = new Date();
+    T.trail(obj, "agency", u.name, "Opened in " + agency + "'s system");
+    APP.auditLog("AGENCY_OPENED", (obj.pkg || obj.id) + " · opened by " + u.name + " (" + agency + ")");
+  };
+
+  // ---- network referrals: the ring and its payments, one referral per agency ----
+  // scope: "network" (one network), "all" (every network), "selected" (payments picked by hand)
+  APP.state.netRefs = {};
+  T.NET_RECS = [
+    { c: "case", t: "Open a case: hold the pending payments, review the paid ones", icon: "folder-plus", tone: "high" },
+    { c: "review", t: "Review: no hold yet", icon: "eye", tone: "med" }
+  ];
+  T.NET_DECISIONS = [
+    { c: "case", t: "Open a case and hold the pending payments", icon: "folder-plus", tone: "high", status: "Case opened by " },
+    { c: "ack", t: "Acknowledge: under review", icon: "eye", tone: "med", status: "Under review at " },
+    { c: "list", t: "Ask Treasury for the full payment list", icon: "list-details", tone: "med", status: "Full list requested by " }
+  ];
+  T.NET_REASONS = {
+    case: [{ c: "AG-N1", t: "Pattern confirmed across the agency's own records" }, { c: "AG-N2", t: "Pending payments to be verified before release" }],
+    ack: [{ c: "AG-N3", t: "Assigned to a reviewer" }],
+    list: [{ c: "AG-N4", t: "Need every payment ID to act" }]
+  };
+  T.netDecision = function (c) { return T.NET_DECISIONS.filter(function (x) { return x.c === c; })[0] || null; };
+  T.netReasonLabel = function (c) { var all = []; Object.keys(T.NET_REASONS).forEach(function (k) { all = all.concat(T.NET_REASONS[k]); }); var r = all.filter(function (x) { return x.c === c; })[0]; return r ? r.c + " · " + r.t : c; };
+  T.refKey = function (scope, net, agency) { return (scope === "all" ? "ALL" : scope === "selected" ? "SEL" : net) + "·" + agency; };
+  T.netRef = function (key) { return APP.state.netRefs[key] || null; };
+  T.netRefsFor = function (agency) { return Object.keys(APP.state.netRefs).map(function (k) { return APP.state.netRefs[k]; }).filter(function (r) { return r.agency === agency; }).sort(function (a, b) { return b.sentAt - a.sentAt; }); };
+  T.netRefsOf = function (scope, net) { return Object.keys(APP.state.netRefs).map(function (k) { return APP.state.netRefs[k]; }).filter(function (r) { return r.scope === scope && (scope !== "network" || r.net === net); }); };
+  // referrals that include a payment: its own network's referral to its agency, or a hand-picked set
+  T.refsForPayment = function (id) {
+    var l = T.lead(id); if (!l) return [];
+    return Object.keys(APP.state.netRefs).map(function (k) { return APP.state.netRefs[k]; }).filter(function (r) {
+      if (r.agency !== l.agency) return false;
+      if (r.scope === "selected") return r.ids.indexOf(id) >= 0;
+      if (r.scope === "network") return r.net === l.network;
+      return !!l.network;
+    });
+  };
+  // what a referral covers, per agency
+  T.netSplit = function (scope, net, ids) {
+    if (scope === "selected") {
+      var by = {};
+      (ids || []).forEach(function (id) { var l = T.lead(id); if (!l) return; var b = by[l.agency] = by[l.agency] || { agency: l.agency, payments: 0, atRisk: 0, pending: 0, ids: [] }; b.payments++; b.atRisk += l.amount; if (l.mode === "prepay") b.pending++; b.ids.push(id); });
+      return Object.keys(by).map(function (k) { return by[k]; });
+    }
+    var nets = scope === "all" ? T.NETS : [T.net(net)], by2 = {};
+    nets.forEach(function (n) {
+      Object.keys(n.split).forEach(function (ag) {
+        var s = n.split[ag], b = by2[ag] = by2[ag] || { agency: ag, payments: 0, atRisk: 0, pending: 0, networks: [], ids: [] };
+        b.payments += s.payments; b.atRisk += s.atRisk; b.pending += s.pending; b.networks.push({ id: n.id, name: n.name, payments: s.payments, atRisk: s.atRisk, pending: s.pending });
+        T.GRAPH.forEach(function (g) { if (n.id === "N01" && T.PROGRAMS[g.program].agency === ag && b.ids.indexOf(g.id) < 0) b.ids.push(g.id); });
+      });
+    });
+    return Object.keys(by2).map(function (k) { return by2[k]; });
+  };
+  T.netRecFor = function (b) { return b.pending ? "case" : "review"; };
+  T.netRecLabel = function (c) { var r = T.NET_RECS.filter(function (x) { return x.c === c; })[0]; return r ? r.t : c; };
+  // the ring, as the agency receives it
+  T.ringSummary = function (net) {
+    var n = T.net(net); if (!n) return null;
+    if (net === "N01") return { organizer: T.OPERATOR.preparer + " (" + T.OPERATOR.officer + ") · no preparer ID", batches: T.OPERATOR.batches + " account batches at " + T.OPERATOR.banks + " online banks · " + T.OPERATOR.accounts + " accounts", mailbox: T.MAILBOX.line + ", " + T.MAILBOX.city + " · " + T.MAILBOX.payees + " payees", phone: T.OPERATOR.phone + " · 37 direct-deposit changes", employers: T.EMPLOYERS.length + " W-2 employers formed in the last year, one agent (" + T.OPERATOR.agent + "), no payroll", agencies: n.agencies.join(", "), payees: n.payees, payments: n.payments, atRisk: n.atRisk };
+    return { organizer: T.SCHEMES[n.scheme].hub, batches: n.spokes.join(" · "), mailbox: "—", phone: "—", employers: "—", agencies: n.agencies.join(", "), payees: n.payees, payments: n.payments, atRisk: n.atRisk };
+  };
+  T.netNote = function (scope, net) {
+    if (scope === "all") return "Treasury has linked " + T.NETS.length + " payment networks over " + T.PLAN.fys + ", " + T.bigUsd(T.stats().atRisk) + " across " + T.PLAN.states + " states. Each is a handful of hubs (account batches, mailboxes, phones, employers) tying ordinary-looking payments together across agencies. Your share is below, by network; the pending payments can still be held.";
+    if (scope === "selected") return "These payments share the account batches and the mailbox of the Delmont network. Each passed Do Not Pay, account ownership and TIN. Treasury recommends you hold any not yet paid and review the rest together, as one case.";
+    var n = T.net(net);
+    return (net === "N01" ? "One organizer, an unregistered preparer, behind " + n.payees + " payees across " + n.agencies.join(", ") + ": " + T.OPERATOR.batches + " account batches opened days apart at three online banks, one private mailbox, eight employers formed in the last year with no payroll, and one phone that changed 37 direct deposits. Every payment passed every check on its own. " : n.name + ": " + T.SCHEMES[n.scheme].label.toLowerCase() + ", " + n.payees + " payees across " + n.agencies.join(", ") + ". ") + "Treasury recommends one case per agency: hold what hasn't paid, review what has, and we'll coordinate across agencies.";
+  };
+  T.netPayload = function (r) {
+    return { schema: T.SCHEMA.id, referralId: r.id, scope: r.scope, from: "treasury.fiscal-service", to: r.agency.toLowerCase(),
+      network: r.scope === "all" ? { networks: r.networks } : r.scope === "network" ? Object.assign({ id: r.net }, T.ringSummary(r.net)) : { id: "selected", payments: r.ids.length },
+      yourShare: { payments: r.payments, pending: r.pending, atRisk: r.atRisk },
+      recommendation: { action: r.rec },
+      payments: r.ids.map(function (id) { var l = T.lead(id), g = T.GRAPH.filter(function (x) { return x.id === id; })[0]; return { id: id, payee: l ? l.payee : g ? g.payee : "", amount: l ? l.amount : g ? g.amount : 0, status: l && l.mode === "prepay" ? "not yet disbursed" : "paid" }; }),
+      paymentsListed: r.ids.length, paymentsTotal: r.payments,
+      respondBy: APP.fmtDate(new Date(Date.now() + 5 * 864e5)) };
+  };
+  APP.openNetReferral = function (scope, net, ids) {
+    (APP.state.hist = APP.state.hist || []).push(APP.snapshot());
+    APP.nav("netreferral", { scope: scope, net: net, ids: ids || [] });
+  };
+  APP.sendNetReferral = function (scope, net, ids, recs, note) {
+    var split = T.netSplit(scope, net, ids), me = (APP.ROLES[APP.state.role] || {}).name, out = [];
+    split.forEach(function (b) {
+      var key = T.refKey(scope, net, b.agency), seq = Object.keys(APP.state.netRefs).length + 1;
+      var r = { key: key, id: "NR-" + (scope === "all" ? "ALL" : scope === "selected" ? "SEL" + seq : net) + "-" + b.agency, scope: scope, net: net || null, agency: b.agency, payments: b.payments, pending: b.pending, atRisk: b.atRisk, networks: b.networks || null, ids: b.ids, rec: (recs && recs[b.agency]) || T.netRecFor(b), note: note || "", sentAt: new Date(), sentBy: me, status: "sent", decision: null, trail: [] };
+      r.payload = T.netPayload(r);
+      APP.state.netRefs[key] = r;
+      T.trail(r, "treasury", me, "Sent to " + T.AGENCIES[b.agency].name + ": " + T.netRecLabel(r.rec));
+      APP.auditLog("NETWORK_REFERRAL_SENT", r.id + " · " + (scope === "all" ? "every network" : scope === "selected" ? ids.length + " payments" : T.net(net).name) + " → " + T.AGENCIES[b.agency].name + " · " + b.payments + " payments · " + T.bigUsd(b.atRisk) + (b.ids.length ? " · incl. " + b.ids.slice(0, 4).join(", ") : ""));
+      out.push(r);
+    });
+    return out;
+  };
+  APP.agencyDecideRef = function (key, decision, reason, note) {
+    var r = T.netRef(key); if (!r) return;
+    var u = T.AGENCY_USERS[r.agency], d = T.netDecision(decision);
+    r.decision = { c: decision, reason: reason, note: note || "", ts: new Date(), by: u.name, title: u.title };
+    r.status = "decided";
+    T.trail(r, "agency", u.name, d.t + " · " + T.netReasonLabel(reason) + (note ? " · “" + note + "”" : ""));
+    if (decision === "case") r.ids.forEach(function (id) { var l = T.lead(id); if (l && l.mode === "prepay" && !APP.state.prepayDecisions[id]) { l.status = "Held by " + r.agency + " · case"; APP.state.prepayDecisions[id] = { action: "refer", rec: "hold", reason: "HLD-01", justification: "Held under " + r.id, ts: new Date(), atRisk: l.amount, agency: { c: "stop", reason: reason, note: "Held under network referral " + r.id, ts: r.decision.ts, by: u.name, title: u.title }, viaRef: r.id }; } });
+    APP.auditLog("AGENCY_NETWORK_DECISION", r.id + " · " + T.AGENCIES[r.agency].name + " (" + u.name + "): " + d.t + " · " + T.netReasonLabel(reason));
+  };
+
   // the agency's own (simulated) system — a separate instance that receives packages
-  APP.openAgencyPortal = function (agency, id) {
+  APP.openAgencyPortal = function (agency, id, ref) {
     if (APP.state.view !== "agencyportal") APP.state._preAgencySnap = APP.snapshot();
-    APP.nav("agencyportal", { agency: agency, id: id });
+    APP.nav("agencyportal", { agency: agency, id: id, ref: ref });
   };
   APP.leaveAgencyPortal = function () {
     if (APP.state.sysWindow) return; // the agency's own window stays the agency's

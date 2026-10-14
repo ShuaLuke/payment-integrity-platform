@@ -51,7 +51,8 @@
       kpi("Referred to agencies", '<span id="ppq-held" style="color:var(--accent-d)">' + usd(S.referred) + '</span>', S.stopped ? '<b style="color:var(--low-tx)">' + usd(S.stopped) + '</b> stopped by the agency' : "with Treasury's recommendation") +
       kpi("Paid this morning · fast lane", (I.payments / 1e6).toFixed(2) + 'M <span style="font-size:13px;color:var(--text2);font-weight:500">· $' + (I.amount / 1e9).toFixed(1) + 'B</span>', (I.fastLane * 100).toFixed(2) + "% pass every check · no added wait") +
       '</div>' +
-      '<div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Risk</th><th>Payment</th><th>Payee · deposit account</th><th class="right">Amount</th><th>Model recommends</th><th style="width:206px">Treasury action</th></tr></thead><tbody id="ppq-body"></tbody></table></div>' +
+      '<div id="ppq-selbar" style="display:none;align-items:center;gap:10px;margin:0 0 8px;padding:8px 12px;border-radius:8px;background:var(--accent-l);border:0.5px solid var(--accent)"><i class="ti ti-checkbox" style="color:var(--accent-d)"></i><span id="ppq-selmsg" style="flex:1;font-size:12px"></span><button class="btn primary" id="ppq-refer" style="font-size:11.5px"><i class="ti ti-send"></i> Refer together</button></div>' +
+      '<div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th style="width:28px"><input type="checkbox" id="ppq-all" title="Select every undecided payment"></th><th>Risk</th><th>Payment</th><th>Payee · deposit account</th><th class="right">Amount</th><th>Model recommends</th><th style="width:206px">Treasury action</th></tr></thead><tbody id="ppq-body"></tbody></table></div>' +
       '<div style="margin-top:10px;font-size:12px;color:var(--text2)"><i class="ti ti-shield-check" style="color:var(--accent-d)"></i> Do Not Pay, account ownership and TIN checks run on every payment. These are the payments that need a person: some failed a check, and some passed every check but don\'t fit the pattern around them. ' + S.alerts + ' scored at or above the alert threshold of ' + P.ALERT + '.</div>' +
       '</div>';
     draw();
@@ -64,6 +65,15 @@
       pdf: function () { window.EXPORT.pdf("Pre-payment review — Treasury payments", window.EXPORT.tableHtml(head, rows())); }
     });
   }
+  var sel = {};
+  function selBar() {
+    var ids = Object.keys(sel).filter(function (k) { return sel[k]; }), bar = document.getElementById("ppq-selbar"); if (!bar) return;
+    bar.style.display = ids.length ? "flex" : "none"; if (!ids.length) return;
+    var ags = ids.map(function (id) { return P.lead(id).agency; }).filter(function (x, i, a) { return a.indexOf(x) === i; });
+    var total = ids.reduce(function (t, id) { return t + P.lead(id).amount; }, 0);
+    document.getElementById("ppq-selmsg").innerHTML = ids.length + ' payment' + (ids.length > 1 ? 's' : '') + ' selected · ' + usd(total) + ' · ' + ags.join(", ") + (ags.length > 1 ? ' <span style="color:var(--text2)">· one referral per agency</span>' : '');
+    document.getElementById("ppq-refer").onclick = function () { window.APP.openNetReferral("selected", null, ids); };
+  }
   function draw() {
     var st = window.APP.state.trq, rows = prepayRows();
     if (st.rec) rows = rows.filter(function (l) { return l.recommendedAction === st.rec; });
@@ -72,8 +82,9 @@
     var crossed = false;
     body.innerHTML = rows.map(function (l) {
       var dec = window.APP.prepayDecisionFor(l.id);
-      var line = !crossed && l.riskScore < P.ALERT ? (crossed = true, '<tr><td colspan="6" style="padding:3px 10px;background:var(--surface);font-size:10.5px;color:var(--text2);border-top:1.5px dashed var(--high)"><i class="ti ti-bell"></i> Alert threshold ' + P.ALERT + ' · above it, analysts are alerted; below it, payments are sampled</td></tr>') : "";
+      var line = !crossed && l.riskScore < P.ALERT ? (crossed = true, '<tr><td colspan="7" style="padding:3px 10px;background:var(--surface);font-size:10.5px;color:var(--text2);border-top:1.5px dashed var(--high)"><i class="ti ti-bell"></i> Alert threshold ' + P.ALERT + ' · above it, analysts are alerted; below it, payments are sampled</td></tr>') : "";
       return line + '<tr class="pprow" data-id="' + l.id + '" style="cursor:pointer">' +
+        '<td>' + (dec ? '' : '<input type="checkbox" class="ppsel" data-id="' + l.id + '"' + (sel[l.id] ? ' checked' : '') + '>') + '</td>' +
         '<td>' + window.UI.riskChip(l.riskScore) + '</td>' +
         '<td><div style="display:flex;gap:6px;align-items:center"><span class="mono" style="font-weight:500">' + l.id + '</span>' + progTag(l) + '</div>' +
         '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap;align-items:center"><span class="tag fwa">' + esc(l.fwaType) + '</span>' + lineTag(l) + '</div></td>' +
@@ -81,7 +92,10 @@
         '<td class="right" style="font-weight:600">' + usd(l.amount) + '</td>' +
         '<td>' + recPill(l) + '</td>' +
         '<td>' + (dec ? decidedPill(dec, l) : btns(l)) + '</td></tr>';
-    }).join("") || '<tr><td colspan="6" class="muted" style="padding:16px;text-align:center">No payments match this filter.</td></tr>';
+    }).join("") || '<tr><td colspan="7" class="muted" style="padding:16px;text-align:center">No payments match this filter.</td></tr>';
+    body.querySelectorAll(".ppsel").forEach(function (c) { c.onclick = function (e) { e.stopPropagation(); sel[c.getAttribute("data-id")] = c.checked; selBar(); }; });
+    var all = document.getElementById("ppq-all"); if (all) all.onclick = function () { body.querySelectorAll(".ppsel").forEach(function (c) { c.checked = all.checked; sel[c.getAttribute("data-id")] = all.checked; }); selBar(); };
+    selBar();
     body.querySelectorAll(".ppbtn").forEach(function (b) {
       b.onclick = function (e) {
         e.stopPropagation();

@@ -42,6 +42,7 @@
       document.getElementById("r-sum").onclick = function () { if (window.COPILOT) window.COPILOT.summarize(id); };
       document.getElementById("r-send").onclick = function () { window.APP.openHandoff(id); };
       var hb = document.getElementById("r-hbanner"); if (hb) hb.onclick = function () { window.APP.openHandoff(id); };
+      var rb = document.getElementById("r-refbanner"); if (rb) rb.onclick = function () { var r = T.refsForPayment(id)[0]; window.APP.openNetReferral(r.scope, r.net, r.ids); };
       var tn = document.getElementById("r-thread"); if (tn) tn.onclick = function () { show("links"); };
       var am = document.getElementById("r-assign-me"); if (am) am.onclick = function () { window.APP.assignCase(id, window.APP.ROLES[window.APP.state.role].name); window.APP.startLeadReview(id); window.Views.claim.render(mount, { id: id }); };
       mount.querySelectorAll(".ctab").forEach(function (b) { b.onclick = function () { show(b.getAttribute("data-tab")); }; });
@@ -66,9 +67,17 @@
       '<span style="white-space:nowrap">' + T.laneTag("flag", T.SCHEMA.name.replace(/ \(.*$/, ""), true) + '</span></div>';
   }
 
-  // what the certifying agency did with Treasury's recommendation
+  // what the certifying agency did with Treasury's recommendation; or, for a payment
+  // that went over inside a network referral, what the agency did with the referral
   function handoffBanner(a) {
-    var h = T.handoff(a.id); if (!h) return "";
+    var h = T.handoff(a.id);
+    if (!h) {
+      var r = T.refsForPayment(a.id)[0]; if (!r) return "";
+      var dd = r.decision ? T.netDecision(r.decision.c) : null, tn = !dd ? ["var(--med-tx)", "var(--med-bg)", "clock"] : [TONE_OF(dd.tone), TONE_BG(dd.tone), dd.icon];
+      return '<div id="r-refbanner" style="cursor:pointer;display:flex;align-items:center;gap:12px;background:' + tn[1] + ';border:0.5px solid ' + tn[0] + ';border-radius:9px;padding:9px 14px;margin-bottom:12px"><i class="ti ti-' + tn[2] + '" style="font-size:20px;color:' + tn[0] + '"></i>' +
+        '<div style="flex:1;font-size:12.5px;line-height:1.45"><b style="color:' + tn[0] + '">' + (dd ? esc(T.AGENCIES[r.agency].name) + ': ' + esc(dd.t) : 'In network referral to ' + esc(T.AGENCIES[r.agency].name)) + '</b> · ' + r.id + ' · ' + (r.scope === "all" ? 'every network' : r.scope === "selected" ? r.ids.length + ' payments' : esc(T.net(r.net).name)) + ' · ' + (dd ? esc(r.decision.by) + ' · ' + window.APP.fmtTs(r.decision.ts) : 'sent ' + window.APP.fmtTs(r.sentAt) + ' · awaiting ' + r.agency) + '</div>' +
+        '<span style="font-size:11.5px;color:' + tn[0] + ';white-space:nowrap">View referral <i class="ti ti-arrow-right"></i></span></div>';
+    }
     var d = h.decision ? T.agencyDecision(a, h.decision.c) : null;
     var tone = !d ? ["var(--med-tx)", "var(--med-bg)", "clock"] : d.tone === "high" ? ["var(--high-tx)", "var(--high-bg)", d.icon] : d.tone === "low" ? ["var(--low-tx)", "var(--low-bg)", d.icon] : ["var(--med-tx)", "var(--med-bg)", d.icon];
     return '<div id="r-hbanner" style="cursor:pointer;display:flex;align-items:center;gap:12px;background:' + tone[1] + ';border:0.5px solid ' + tone[0] + ';border-radius:9px;padding:9px 14px;margin-bottom:12px">' +
@@ -79,6 +88,8 @@
       '<span style="font-size:11.5px;color:' + tone[0] + ';white-space:nowrap">View package <i class="ti ti-arrow-right"></i></span></div>';
   }
 
+  function TONE_OF(t) { return t === "high" ? "var(--high-tx)" : t === "low" ? "var(--low-tx)" : "var(--med-tx)"; }
+  function TONE_BG(t) { return t === "high" ? "var(--high-bg)" : t === "low" ? "var(--low-bg)" : "var(--med-bg)"; }
   function threadBanner(a) {
     var b = a.batchRec;
     return '<div id="r-thread" style="cursor:pointer;display:flex;align-items:center;gap:12px;background:#001141;color:#fff;border-radius:9px;padding:9px 14px;margin-bottom:12px">' +
@@ -140,6 +151,9 @@
     if (name === "links" && a.network) {
       var cv = document.getElementById("r-netcanvas"); if (cv && window.Views.network.embed) window.Views.network.embed(cv, a.network, a.id, 440);
       var full = document.getElementById("r-netfull"); if (full) full.onclick = function () { window.APP.openNetwork(a.network); };
+      var nrf = document.getElementById("r-netrefer"); if (nrf) nrf.onclick = function () { window.APP.openNetReferral("network", a.network); };
+      var lsel = {};
+      p.querySelectorAll(".r-lsel").forEach(function (c) { c.onclick = function (e) { e.stopPropagation(); lsel[c.getAttribute("data-id")] = c.checked; var ids = Object.keys(lsel).filter(function (k) { return lsel[k]; }), bar = document.getElementById("r-lbar"); if (bar) { bar.style.display = ids.length ? "flex" : "none"; document.getElementById("r-lmsg").textContent = ids.length + " selected, plus this payment"; document.getElementById("r-lrefer").onclick = function () { window.APP.openNetReferral("selected", a.network, [a.id].concat(ids)); }; } }; });
     }
     p.querySelectorAll(".r-tonet").forEach(function (b) { b.onclick = function () { show("links"); }; });
     if (name === "overview") { var b = document.getElementById("r-explain"); if (b) b.onclick = function () { if (window.COPILOT) window.COPILOT.summarize(a.id); }; }
@@ -312,16 +326,17 @@
     var n = T.net(a.network), mine = T.GRAPH.filter(function (g) { return g.id === a.id; })[0];
     var graph = '<div class="card" style="margin:0 0 12px;padding:0;overflow:hidden"><div style="padding:10px 12px;border-bottom:0.5px solid var(--border2);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">' +
       '<div><div style="font-weight:500;font-size:13px"><i class="ti ti-affiliate" style="color:var(--accent-d)"></i> ' + esc(n.name) + ' <span class="muted" style="font-weight:400;font-size:11px">· ' + esc(T.SCHEMES[n.scheme].label.toLowerCase()) + ' · ' + n.payees + ' payees · ' + n.agencies.join(", ") + ' · ' + T.bigUsd(n.atRisk) + '</span></div><div style="font-size:11px;color:var(--text2)">This payment is outlined in ' + (a.id === T.SEED ? 'red' : 'blue') + '. Hover a batch, a payment or an agency; click a payment to open it.</div></div>' +
-      '<button class="btn" id="r-netfull" style="font-size:11.5px"><i class="ti ti-arrows-maximize"></i> Open the full network view</button></div>' +
+      '<div style="display:flex;gap:6px"><button class="btn" id="r-netrefer" style="font-size:11.5px"><i class="ti ti-send"></i> Refer this network</button><button class="btn" id="r-netfull" style="font-size:11.5px"><i class="ti ti-arrows-maximize"></i> Open the full network view</button></div></div>' +
       '<div id="r-netcanvas" style="background:var(--surface)"></div></div>';
     if (!mine) return graph;
     var rel = T.GRAPH.filter(function (g) { return g.id !== a.id && (g.batch === mine.batch || g.program === mine.program); }).slice(0, 12);
-    return graph + '<div class="card" style="padding:0;overflow:hidden;margin:0"><div style="padding:10px 12px;font-weight:500;font-size:13px;border-bottom:0.5px solid var(--border2)"><i class="ti ti-link" style="color:var(--accent-d)"></i> Payments linked to this one <span class="muted" style="font-weight:400;font-size:11px">· ' + rel.length + ' shown of ' + T.net("N01").payments + ' in the network</span></div>' +
-      '<table><thead><tr><th>Payment</th><th>Payee</th><th>Shares</th><th class="right">Amount</th><th>Status</th></tr></thead><tbody>' +
+    return graph + '<div class="card" style="padding:0;overflow:hidden;margin:0"><div style="padding:10px 12px;border-bottom:0.5px solid var(--border2);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div style="font-weight:500;font-size:13px"><i class="ti ti-link" style="color:var(--accent-d)"></i> Payments linked to this one <span class="muted" style="font-weight:400;font-size:11px">· ' + rel.length + ' shown of ' + T.net("N01").payments + ' in the network · tick some to refer them with this one</span></div>' +
+      '<div id="r-lbar" style="display:none;align-items:center;gap:8px"><span id="r-lmsg" style="font-size:11.5px"></span><button class="btn primary" id="r-lrefer" style="font-size:11px;padding:3px 9px"><i class="ti ti-send"></i> Refer together</button></div></div>' +
+      '<table><thead><tr><th style="width:28px"></th><th>Payment</th><th>Payee</th><th>Shares</th><th class="right">Amount</th><th>Status</th></tr></thead><tbody>' +
       rel.map(function (g) {
         var sh = [g.batch === mine.batch ? "account batch" : null, "mailbox PMB 212", g.program === mine.program ? "same payment type" : null].filter(Boolean).join(" · ");
         var open = T.lead(g.id);
-        return '<tr' + (open ? ' data-open="' + g.id + '" style="cursor:pointer"' : '') + '><td class="mono">' + g.id + '</td><td>' + esc(g.payee) + '</td><td style="font-size:11.5px">' + sh + '</td><td class="right mono">' + usd(g.amount) + '</td><td style="font-size:11.5px">' + (g.state === "held" ? "Held" : g.state === "pending" ? "Pending" : "Paid") + '</td></tr>';
+        return '<tr' + (open ? ' data-open="' + g.id + '" style="cursor:pointer"' : '') + '><td>' + (open ? '<input type="checkbox" class="r-lsel" data-id="' + g.id + '">' : '') + '</td><td class="mono">' + g.id + '</td><td>' + esc(g.payee) + '</td><td style="font-size:11.5px">' + sh + '</td><td class="right mono">' + usd(g.amount) + '</td><td style="font-size:11.5px">' + (g.state === "held" ? "Held" : g.state === "pending" ? "Pending" : "Paid") + '</td></tr>';
       }).join("") + '</tbody></table></div>';
   }
 
@@ -330,6 +345,8 @@
     if (a.paidDate) ev.push([a.paidDate, "Paid", usd(a.amount) + " to " + a.bank + " " + a.acct]);
     if (a.paidDate && a.network) ev.push([a.paidDate, "Flagged post-payment", "Linked to " + T.net(a.network).name]);
     T.signalsFor(a.id).forEach(function (s) { ev.push([s.received, s.agency + " flag received", s.kind + (s.payment === a.id ? "" : " · " + s.subject + " (" + s.payment + ") · " + s.match)]); });
+    var h = T.handoff(a.id); if (h) (h.trail || []).forEach(function (t) { ev.push([window.APP.fmtTs(t.ts), (t.side === "agency" ? h.agency : "Treasury") + " · package", t.who + " · " + t.text]); });
+    T.refsForPayment(a.id).forEach(function (r) { (r.trail || []).forEach(function (t) { ev.push([window.APP.fmtTs(t.ts), (t.side === "agency" ? r.agency : "Treasury") + " · " + r.id, t.who + " · " + t.text]); }); });
     var audit = window.APP.state.audit.filter(function (x) { return (x.detail || "").indexOf(a.id) >= 0; }).slice().reverse().map(function (x) { return [window.APP.fmtTs(x.ts), x.action.replace(/_/g, " ").toLowerCase().replace(/^./, function (c) { return c.toUpperCase(); }), x.detail + " · " + x.user]; });
     return '<div class="card" style="margin:0"><div style="font-weight:500;font-size:13px;margin-bottom:6px"><i class="ti ti-timeline" style="color:var(--accent-d)"></i> History</div>' +
       ev.concat(audit).map(function (e) { return '<div style="display:flex;gap:10px;padding:6px 0;border-top:0.5px solid var(--border2);font-size:12px"><span class="mono" style="color:var(--text3);width:120px;flex:none">' + esc(e[0] || "") + '</span><span style="font-weight:500;width:150px;flex:none">' + esc(e[1]) + '</span><span style="color:var(--text2)">' + esc(e[2]) + '</span></div>'; }).join("") + '</div>';
