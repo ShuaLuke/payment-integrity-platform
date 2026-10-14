@@ -103,7 +103,7 @@
         { sev: "high", label: "Mailbox shared with 29 other payees", detail: "2210 Mill Pointe Pkwy, Ste 114 · PMB 212, Carver Mill, GA is a private mailbox at a shipping store. In 13 months, 46 federal payments to 30 different payees used it: tax refunds, Social Security benefits and federal annuities.", src: "Agency payment files · USPS mailbox list", lane: "treas" },
         { sev: "high", label: "W-2 from an employer with no real payroll", detail: "The return's only W-2 is from Harlan Ridge Logistics LLC, formed 2025-11-04 at the same mailbox. Harlan Ridge issued 38 W-2s; the tax it reports withholding was never deposited.", src: "OpenCorporates · IRS return flag", lane: "irs" },
         { sev: "high", label: "Mailbox flagged by SSA", detail: "On Oct 1, SSA flagged Gloria A. Pruitt: a phone call had moved her benefit to a new account and her mail to PMB 212. Treasury matched the flag to this mailbox, where the refund is going.", src: "SSA · SIG-SSA-0412", lane: "flag" },
-        { sev: "high", label: "The identity lives in Ohio, not Georgia", detail: "Marisol T. Avery has lived in Dayton, OH for 11 years, with no tie to Carver Mill, GA or to the employer on the W-2. Someone else is using her identity.", src: "TrackLight · PIPL", lane: "tl" },
+        { sev: "high", label: "The identity lives in Ohio, not Georgia", detail: "Marisol T. Avery has lived in Dayton, OH for 11 years, with no tie to Carver Mill, GA or to the employer on the W-2. Someone else is using her identity.", src: "PIPL", lane: "tl" },
         { sev: "med", label: "Refund 3.1× the peer median", detail: "Peer median refund for a single filer reporting $44,800 in wages: $6,100. This one is $18,940, almost all of it reported withholding.", src: "Peer comparison", lane: "treas" },
         { sev: "low", label: "Passed Do Not Pay", detail: "No match in any Do Not Pay source: death, debarment, debt, incarceration.", src: "Do Not Pay", lane: "dnp" },
         { sev: "low", label: "Account ownership and TIN verified", detail: "The account is in Marisol T. Avery's name, and the TIN is valid and matches.", src: "Account & TIN verification", lane: "dnp" }
@@ -112,7 +112,7 @@
       submitted: "2026-10-06 05:40", riskScore: 88, confidence: 0.87, recommendedAction: "hold", fwaType: "Stolen-identity refund", network: "N01", amount: 17760,
       reason: "Same mailbox as PV-73194 · account in a batch of 31 · W-2 from Brookfane Staffing, formed last year",
       signals: [
-        { sev: "high", label: "Payee died on Sep 14", detail: "An obituary for Owen P. Strickland ran in Macon, GA on 2026-09-16. The death isn't in the Death Master File yet, so Do Not Pay passed.", src: "TrackLight · obituaries · OSINT", lane: "tl" },
+        { sev: "high", label: "Payee died on Sep 14", detail: "An obituary for Owen P. Strickland ran in Macon, GA on 2026-09-16. The death isn't in the Death Master File yet, so Do Not Pay passed.", src: "obituaries · OSINT", lane: "tl" },
         { sev: "high", label: "Same mailbox as PV-73194", detail: "Uses PMB 212 in Carver Mill, GA, shared by 30 federal payees.", src: "Agency payment files", lane: "treas" },
         { sev: "high", label: "W-2 from an employer with no real payroll", detail: "Brookfane Staffing LLC, formed 2025-11-19, same registered agent and mailbox as Harlan Ridge Logistics.", src: "OpenCorporates · IRS return flag", lane: "irs" },
         { sev: "low", label: "Passed Do Not Pay, account and TIN checks", detail: "No list matches; account in the payee's name.", src: "Do Not Pay · Account & TIN verification", lane: "dnp" }
@@ -364,6 +364,16 @@
       network: ["warn", "Change request sent from a look-alike domain also used against other vendors."] }
   };
 
+  // what agencies did with Treasury's recommendations over the last 30 days (synthetic),
+  // before today's; today's hand-offs are added live
+  var AGENCY_STATS = {
+    IRS: { sent: 9, acted: 6, released: 2, pending: 1, usd: 148200, days: 1.8 },
+    SSA: { sent: 3, acted: 2, released: 0, pending: 1, usd: 21400, days: 2.6 },
+    OPM: { sent: 1, acted: 1, released: 0, pending: 0, usd: 9860, days: 3.1 },
+    VA: { sent: 1, acted: 0, released: 1, pending: 0, usd: 0, days: 1.2 },
+    GSA: { sent: 2, acted: 2, released: 0, pending: 0, usd: 680800, days: 0.9 }
+  };
+
   // the shared schema packages and signals travel in (a concept, owned by the government)
   var SCHEMA = { id: "pix.recommendation/0.3", name: "Payment Integrity Exchange (PIX) v0.3", note: "Shared schema, owned by the government (concept)" };
   // who signs in to each agency's (simulated) system
@@ -378,7 +388,7 @@
   var TREAS = {
     PROGRAMS: PROGRAMS, AGENCIES: AGENCIES, MAILBOX: MAILBOX, OPERATOR: OPERATOR, BATCHES: BATCHES, EMPLOYERS: EMPLOYERS, GRAPH: GRAPH, LEADS: LEADS,
     SCHEMES: SCHEMES, SCHEME_ORDER: SCHEME_ORDER, NETS: NETS, BRIDGES: BRIDGES, PLAN: PLAN, FLOW: FLOW,
-    IDENTITY: IDENTITY, SIGNALS: SIGNALS, DNP: DNP, TL_GROUPS: TL_GROUPS, TL_CATS: TL_CATS, TL: TL, LANES: LANES, LANE_ORDER: LANE_ORDER, SCHEMA: SCHEMA, AGENCY_USERS: AGENCY_USERS, ALERT: 75,
+    IDENTITY: IDENTITY, AGENCY_STATS: AGENCY_STATS, SIGNALS: SIGNALS, DNP: DNP, TL_GROUPS: TL_GROUPS, TL_CATS: TL_CATS, TL: TL, LANES: LANES, LANE_ORDER: LANE_ORDER, SCHEMA: SCHEMA, AGENCY_USERS: AGENCY_USERS, ALERT: 75,
     signalsFor: function (id) { return SIGNALS.filter(function (s) { return s.payment === id || s.matched.indexOf(id) >= 0; }); },
     tlFor: function (id) { var f = TL[id] || {}; return TL_CATS.map(function (c) { var r = f[c.k]; return { k: c.k, g: c.g, t: c.t, src: c.src, st: r ? r[0] : "pass", text: r ? r[1] : "No adverse findings" }; }); },
     // the signal an agency sent about this very payment (not one matched to it)

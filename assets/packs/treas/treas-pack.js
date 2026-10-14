@@ -159,6 +159,22 @@
     if (l.mode === "prepay" && APP.state.prepayDecisions[id]) APP.state.prepayDecisions[id].agency = h.decision;
     APP.auditLog("AGENCY_DECISION", "Payment " + id + " · " + T.AGENCIES[h.agency].name + " (" + u.name + "): " + d.t + " · " + T.agencyReasonLabel(reason));
   };
+  // the 30-day picture by agency, with today's hand-offs folded in
+  T.agencyStats = function () {
+    var rows = Object.keys(T.AGENCY_STATS).map(function (k) { var b = T.AGENCY_STATS[k]; return { agency: k, sent: b.sent, acted: b.acted, released: b.released, pending: b.pending, usd: b.usd, days: b.days, today: 0 }; });
+    var byAg = {}; rows.forEach(function (r) { byAg[r.agency] = r; });
+    Object.keys(APP.state.handoffs).forEach(function (id) {
+      var h = APP.state.handoffs[id], l = T.lead(id), r = byAg[h.agency]; if (!r || !l) return;
+      r.sent++; r.today++;
+      if (!h.decision || h.decision.c === "info") r.pending++;
+      else if (h.decision.c === "stop" || h.decision.c === "reclaim") { r.acted++; r.usd += l.amount; }
+      else r.released++;
+    });
+    var tot = rows.reduce(function (t, r) { t.sent += r.sent; t.acted += r.acted; t.released += r.released; t.pending += r.pending; t.usd += r.usd; t.today += r.today; return t; }, { sent: 0, acted: 0, released: 0, pending: 0, usd: 0, today: 0 });
+    var wd = rows.filter(function (r) { return r.sent; }); tot.days = wd.length ? Math.round(wd.reduce(function (t, r) { return t + r.days * r.sent; }, 0) / wd.reduce(function (t, r) { return t + r.sent; }, 0) * 10) / 10 : 0;
+    return { rows: rows, total: tot };
+  };
+
   // the agency's own (simulated) system — a separate instance that receives packages
   APP.openAgencyPortal = function (agency, id) {
     if (APP.state.view !== "agencyportal") APP.state._preAgencySnap = APP.snapshot();

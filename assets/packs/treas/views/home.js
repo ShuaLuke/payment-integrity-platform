@@ -11,6 +11,23 @@
       '<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:500">' + l.id + ' · ' + esc(l.payee) + '</div><div style="font-size:11px;color:var(--text2)">' + esc(l.fwaType) + ' · ' + esc(l.prog.short) + ' · ' + l.agency + '</div></div>' +
       '<div style="font-size:12px;font-weight:600" class="mono">' + usd(l.amount) + '</div></div>';
   }
+  // what agencies did with Treasury's recommendations: the visibility Treasury lacks today
+  function agencies() {
+    var S = T.agencyStats(), tot = S.total;
+    var tile = function (l, v, sub, tone) { return '<div style="flex:1;min-width:130px;border-radius:8px;padding:8px 11px;background:' + (tone || "var(--surface)") + '"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3)">' + l + '</div><div style="font-weight:600;font-size:19px;margin-top:1px;font-variant-numeric:tabular-nums">' + v + '</div>' + (sub ? '<div style="font-size:10.5px;color:var(--text2)">' + sub + '</div>' : '') + '</div>'; };
+    var rows = S.rows.map(function (r) {
+      return '<tr><td><span class="tag mono" style="font-size:10px">' + r.agency + '</span> <span style="font-size:11.5px">' + esc(T.AGENCIES[r.agency].name) + '</span>' + (r.today ? ' <span class="pill" style="background:var(--accent-l);color:var(--accent-d);font-size:9.5px">+' + r.today + ' today</span>' : '') + '</td>' +
+        '<td class="right mono">' + r.sent + '</td><td class="right mono" style="color:var(--high-tx);font-weight:600">' + r.acted + '</td><td class="right mono">' + r.released + '</td><td class="right mono" style="color:' + (r.pending ? "var(--med-tx)" : "var(--text3)") + '">' + r.pending + '</td>' +
+        '<td class="right mono" style="font-weight:600">' + (r.usd ? T.bigUsd(r.usd) : "—") + '</td><td class="right mono">' + r.days.toFixed(1) + ' d</td></tr>';
+    }).join("");
+    return '<div class="card" id="h-agencies" style="margin-bottom:10px;padding:0;overflow:hidden">' +
+      '<div style="padding:10px 14px;border-bottom:0.5px solid var(--border2);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><div style="font-weight:600;font-size:13.5px"><i class="ti ti-send" style="color:var(--accent-d)"></i> Recommendations to agencies <span class="muted" style="font-weight:400;font-size:11px">· last 30 days</span></div><div style="font-size:11.5px;color:var(--text2)">Treasury recommends; the certifying agency decides. This is what came back.</div></div>' + T.laneTag("flag", T.SCHEMA.name.replace(/ \(.*$/, ""), true) + '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px">' +
+      tile("Sent", tot.sent, tot.today ? tot.today + " today" : "across 5 agencies") + tile("Acted on", tot.acted, "stopped or reclaimed", "var(--high-bg)") + tile("Released · no action", tot.released, "the agency verified the payee") + tile("Awaiting the agency", tot.pending, "or asked Treasury for more", tot.pending ? "var(--med-bg)" : null) +
+      tile("Stopped or recovered", T.bigUsd(tot.usd), "on Treasury's recommendation", "var(--low-bg)") + tile("Median response", tot.days.toFixed(1) + " days", "from package to decision") + '</div>' +
+      '<table><thead><tr><th>Certifying agency</th><th class="right">Sent</th><th class="right">Acted on</th><th class="right">Released</th><th class="right">Pending</th><th class="right">Stopped / recovered</th><th class="right">Response</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
   window.Views.home = {
     render: function (mount) {
       var r = window.APP.ROLES[window.APP.state.role], I = T.INTAKE, sup = window.APP.isSupervisor();
@@ -25,6 +42,7 @@
         '<div><div class="page-title" style="font-size:18px">Welcome back, ' + esc(r.name) + '</div><div class="page-sub">' + r.title + ' workspace · Treasury payments · tax refunds, benefits, annuities and vendor payments, verified before they go out · ' + T.PLAN.fys + '</div></div></div>' +
         (sup ? kpis([["Awaiting my approval", pend.length], ["Payments held today", I.held.toLocaleString(), "pending verification"], ["Networks under review", T.NETS.filter(function (n) { return n.status !== "New"; }).length, "of " + T.NETS.length + " detected"], ["Straight to payment", fast, "passed every check"]])
           : kpis([["Awaiting a payment decision", held.length, "flagged before disbursement"], ["My open payments", mine.length, "post-payment review"], ["Straight to payment", fast, "passed every check"], ["Verified this morning", (I.payments / 1e6).toFixed(2) + "M", "$" + (I.amount / 1e9).toFixed(1) + "B certified by agencies"]])) +
+        agencies() +
         (!sup && next ? '<div class="card" style="margin-bottom:10px;border:0.5px solid #f3c9c9;background:linear-gradient(90deg,var(--high-bg),var(--card) 40%)"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--high-tx)"><i class="ti ti-player-play"></i> Next up · before it pays</div>' +
           '<div style="font-weight:600;font-size:14px;margin-top:3px">' + next.id + ' · ' + esc(next.payee) + ' · ' + usd(next.amount) + '</div><div style="font-size:12px;color:var(--text2);margin-top:2px">' + esc(next.reason) + '</div></div>' +
           '<button class="btn primary" id="h-next"><i class="ti ti-arrow-right"></i> Review</button></div></div>' : '') +
