@@ -76,7 +76,7 @@
     var ring = scope === "network" ? T.ringSummary(net) : null;
     var kv = function (k, v) { return '<div style="display:flex;gap:8px;padding:5px 0;border-top:0.5px solid var(--border2);font-size:12px"><span style="width:110px;flex:none;color:var(--text3)">' + k + '</span><span style="flex:1">' + v + '</span></div>'; };
     var ringHtml = ring ? '<div style="font-weight:500;font-size:12.5px;margin:12px 0 2px"><i class="ti ti-affiliate" style="color:var(--accent-d)"></i> The ring</div>' +
-      kv("Organizer", esc(ring.organizer)) + kv("Accounts", esc(ring.batches)) + kv("Mailbox", esc(ring.mailbox)) + kv("Phone", esc(ring.phone)) + kv("Employers", esc(ring.employers)) + kv("Scale", ring.payees + " payees · " + ring.payments + " payments · " + T.bigUsd(ring.atRisk) + " · " + esc(ring.agencies))
+      kv("Organizer", esc(ring.organizer)) + kv("Accounts", esc(ring.batches)) + kv("Mailbox", esc(ring.mailbox)) + kv("Phone", esc(ring.phone)) + kv("Employers", esc(ring.employers)) + kv("Identities", esc(ring.victims)) + kv("Scale", ring.payees + " payees · " + ring.payments + " payments · " + T.bigUsd(ring.atRisk) + " · " + esc(ring.agencies))
       : scope === "all" ? '<div style="font-weight:500;font-size:12.5px;margin:12px 0 2px"><i class="ti ti-affiliate" style="color:var(--accent-d)"></i> ' + T.NETS.length + ' networks · ' + T.bigUsd(T.stats().atRisk) + '</div><div style="font-size:11.5px;color:var(--text2)">Each agency\'s referral lists its networks and its share of each.</div>' : "";
     var rows = split.map(function (b) {
       var r = isSent ? T.netRef(T.refKey(scope, net, b.agency)) : null, rec = r ? r.rec : d.recs[b.agency] || T.netRecFor(b);

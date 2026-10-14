@@ -243,6 +243,8 @@
     var col = function (icon, title, sub, badge, body, tone) {
       return '<div style="flex:1;min-width:300px;border:0.5px solid var(--border);border-radius:9px;overflow:hidden"><div style="padding:9px 12px;background:' + tone + ';display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-weight:600;font-size:12.5px"><i class="ti ti-' + icon + '"></i> ' + title + '</div><div style="font-size:10.5px;color:var(--text2)">' + sub + '</div></div>' + badge + '</div><div style="padding:2px 12px 6px">' + body + '</div></div>';
     };
+    var buy = '<div style="font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text3);margin:12px 0 -3px">Available to buy <span style="font-weight:400;text-transform:none;letter-spacing:0">· checks Treasury could add with purchased data · not run</span></div>' + T.BUYABLE.map(function (b) { return row("na", b.t, b.text, b.src); }).join("");
+    dnp += buy;
     var dnpOk = t !== "Deceased payee" && t !== "Vendor bank change";
     return '<div class="card" style="margin:0"><div style="display:flex;gap:10px;flex-wrap:wrap">' +
       col("shield-check", "Today's checks", "Do Not Pay, account ownership and TIN · run on every payment", '<span class="pill" style="background:' + (dnpOk ? "var(--low-bg);color:var(--low-tx)" : "var(--high-bg);color:var(--high-tx)") + '">' + (dnpOk ? "All passed" : "Match") + '</span>', dnp, "var(--surface)") +
@@ -254,8 +256,8 @@
   }
 
   function row(st, title, text, src) {
-    var c = { pass: ["circle-check", "var(--low)"], fail: ["circle-x", "var(--high)"], warn: ["alert-triangle", "var(--med)"] }[st];
-    return '<div style="display:flex;gap:9px;padding:7px 0;border-top:0.5px solid var(--border2)"><i class="ti ti-' + c[0] + '" style="color:' + c[1] + ';font-size:16px;margin-top:1px"></i><div style="flex:1;min-width:0"><div style="font-size:12px"><b style="font-weight:500">' + esc(title) + '</b>' + (st === "pass" ? ' <span style="color:var(--text2)">· ' + esc(text) + '</span>' : '') + '</div>' + (st !== "pass" ? '<div style="font-size:11.5px;color:var(--ink);line-height:1.4;margin-top:1px">' + esc(text) + '</div>' : '') + '<div style="font-size:10px;color:var(--text3);margin-top:1px">' + esc(src) + '</div></div></div>';
+    var c = { pass: ["circle-check", "var(--low)"], fail: ["circle-x", "var(--high)"], warn: ["alert-triangle", "var(--med)"], na: ["circle-dashed", "var(--text3)"] }[st];
+    return '<div style="display:flex;gap:9px;padding:7px 0;border-top:0.5px solid var(--border2)' + (st === "na" ? ';opacity:.75' : '') + '"><i class="ti ti-' + c[0] + '" style="color:' + c[1] + ';font-size:16px;margin-top:1px"></i><div style="flex:1;min-width:0"><div style="font-size:12px"><b style="font-weight:500">' + esc(title) + '</b>' + (st === "pass" ? ' <span style="color:var(--text2)">· ' + esc(text) + '</span>' : st === "na" ? ' ' + T.laneTag("buy", null, true) : '') + '</div>' + (st === "fail" || st === "warn" ? '<div style="font-size:11.5px;color:var(--ink);line-height:1.4;margin-top:1px">' + esc(text) + '</div>' : st === "na" ? '<div style="font-size:11.5px;color:var(--text2);line-height:1.4;margin-top:1px">' + esc(text) + '</div>' : '') + '<div style="font-size:10px;color:var(--text3);margin-top:1px">' + esc(src) + '</div></div></div>';
   }
 
   // ---- address: every federal payee at the mailbox ----

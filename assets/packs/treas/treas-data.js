@@ -30,7 +30,7 @@
   // An unregistered preparer behind fake W-2 employers, accounts opened in bulk at
   // three online banks, one private mailbox, and redirected benefits and annuities.
   var MAILBOX = { line: "2210 Mill Pointe Pkwy, Ste 114 · PMB 212", city: "Carver Mill, GA 30097", kind: "Private mailbox at a shipping store", payments: 46, payees: 30, amount: 505000, months: 13 };
-  var OPERATOR = { name: "Delmont network", preparer: "Delmont Tax & Business Services", officer: "R. T. Delmont", agent: "Sentinel Registered Agents LLC", phone: "(470) 555-0148", accounts: 386, batches: 9, banks: 3 };
+  var OPERATOR = { name: "Delmont network", preparer: "Delmont Tax & Business Services", officer: "R. T. Delmont", agent: "Sentinel Registered Agents LLC", phone: "(470) 555-0148", accounts: 386, batches: 9, banks: 3, banksText: "3 online banks + 1 prepaid-card issuer" };
   // account batches: runs of neighboring account numbers opened within days, one per stolen or borrowed identity
   var BATCHES = [
     { id: "A1", bank: "Brightpath Bank", range: "••6201–6248", accts: 34, opened: "Sep 8–19, 2026", role: "Refund accounts", risk: 92, payments: 41 },
@@ -38,8 +38,11 @@
     { id: "A3", bank: "Lumen Direct", range: "••3301–3349", accts: 38, opened: "May 4–15, 2026", role: "Benefit redirects", risk: 91, payments: 166 },
     { id: "A4", bank: "Lumen Direct", range: "••5502–5538", accts: 27, opened: "Jan 20–30, 2026", role: "Refund accounts", risk: 87, payments: 31 },
     { id: "A5", bank: "Corridor Financial", range: "••0861–0899", accts: 31, opened: "Mar 9–18, 2026", role: "Refund accounts", risk: 86, payments: 35 },
-    { id: "A6", bank: "Corridor Financial", range: "••2240–2272", accts: 24, opened: "Apr 13–22, 2026", role: "Annuity redirects", risk: 88, payments: 112 }
+    { id: "A6", bank: "Corridor Financial", range: "••2240–2272", accts: 24, opened: "Apr 13–22, 2026", role: "Annuity redirects", risk: 88, payments: 112 },
+    { id: "A7", bank: "Statewide Prepaid", range: "••4410–4448", accts: 39, opened: "Jun 1–12, 2026", role: "Refund cards", risk: 85, payments: 44 }
   ];
+  // where the stolen identities came from: they cluster on one source, which points at an insider
+  var VICTIMS = { source: "Carver Mill Family Clinic", count: 312, of: 386, years: "2022–24", text: "312 of the 386 payees were patients of Carver Mill Family Clinic between 2022 and 2024. Identities that cluster on one source usually mean one insider." };
   var BATCH = function (id) { return BATCHES.filter(function (b) { return b.id === id; })[0] || null; };
   // the employers on the W-2s: formed in the last year, same agent, same mailbox, no real payroll
   var EMPLOYERS = [
@@ -76,6 +79,7 @@
     ["PV-72497", "A6", "OPM", "Leonard M. Askew", 12480, "paid", "••2263"],
     ["PV-71781", "A5", "REF", "Shayla N. Pierce", 17890, "paid", "••0881"],
     ["PV-71824", "A2", "REF", "Owen P. Strickland", 16840, "paid", "••8852"],
+    ["PV-71915", "A7", "REF", "Felix A. Moreno", 15480, "paid", "••4421"],
     ["PV-72466", "A3", "SSA", "Terrence D. Okafor", 9140, "paid", "••3328"]
   ];
   // People on the graph who aren't who the payment says: found by TrackLight, not
@@ -279,9 +283,28 @@
     treas: { k: "treas", t: "Treasury history", icon: "building-bank", c: "#0043ce", bg: "#edf5ff", d: "Patterns across every payment Treasury disburses, for every agency" },
     dnp: { k: "dnp", t: "Today's checks", icon: "shield-check", c: "#525252", bg: "#f4f4f4", d: "Do Not Pay, account ownership and TIN: run on every payment today" },
     tl: { k: "tl", t: "TrackLight", icon: "radar-2", c: "#0e5a63", bg: "#e3f6f4", d: "Due diligence on who the payee and the businesses behind the payment really are" },
-    irs: { k: "irs", t: "IRS return flag", icon: "receipt-tax", c: "#6929c4", bg: "#f6f2ff", d: "Flags IRS attaches to a refund: the return itself stays with IRS (26 U.S.C. § 6103)" }
+    irs: { k: "irs", t: "IRS return flag", icon: "receipt-tax", c: "#6929c4", bg: "#f6f2ff", d: "Flags IRS attaches to a refund: the return itself stays with IRS (26 U.S.C. § 6103)" },
+    buy: { k: "buy", t: "Purchased data", icon: "shopping-cart", c: "#8a3800", bg: "#fff3e8", d: "Available to Treasury if it buys the data; not live in this demo" }
   };
-  var LANE_ORDER = ["file", "flag", "treas", "dnp", "tl", "irs"];
+  var LANE_ORDER = ["file", "flag", "treas", "dnp", "tl", "irs", "buy"];
+  // checks Treasury could add by buying data (from the prep meeting): shown, not run
+  var BUYABLE = [
+    { t: "Income history", src: "Credit-bureau income data", text: "Would show whether the payee has any earnings record matching the W-2. Not run: data not purchased." },
+    { t: "Commercial TIN check", src: "Commercial TIN-match service", text: "Would match the TIN to the name across commercial records. Not run: policy question open." }
+  ];
+
+  // ---- how the Delmont network was found: nine events over six weeks, each from one lane ----
+  var DISCOVERY = [
+    { d: "2026-08-27", lane: "treas", t: "Three refunds, one mailbox", x: "Treasury's payment history matched three IRS refunds paid in August to PMB 212, a private mailbox at a shipping store. Not a flag yet; a thread." },
+    { d: "2026-09-02", lane: "tl", t: "Who the payees really are", x: "TrackLight identity profiles: two of the three have lived in Ohio for a decade. Neither has any tie to Georgia." },
+    { d: "2026-09-11", lane: "treas", t: "Accounts opened in batches", x: "The three deposit accounts sit in a run of 34 neighboring account numbers opened within days at Brightpath Bank; 29 of them had already received federal payments." },
+    { d: "2026-09-16", lane: "tl", t: "A death before the Death Master File", x: "An obituary for Owen P. Strickland, whose refund was pending. The Death Master File hadn't caught up, so Do Not Pay passed." },
+    { d: "2026-09-24", lane: "irs", t: "The employers behind the W-2s", x: "IRS return flags on the batch's returns name eight employers. OpenCorporates: all formed in the last year at PMB 212, one registered agent, no contracts or payroll." },
+    { d: "2026-09-29", lane: "tl", t: "The man behind the employers", x: "R. T. Delmont is the officer on six of them and runs Delmont Tax & Business Services, which has no preparer ID: a LinkedIn page, a state judgment, two tax liens and a bankruptcy." },
+    { d: "2026-10-01", lane: "flag", t: "SSA's flag lands on the same mailbox and phone", x: "SSA flags Gloria Pruitt's deposit, changed by phone. The call moved her mail to PMB 212, and the number, (470) 555-0148, made 36 other SSA and OPM changes." },
+    { d: "2026-10-02", lane: "tl", t: "Where the identities came from", x: VICTIMS.text },
+    { d: "2026-10-06", lane: "tl", t: "Link analysis closes the loop", x: "386 payees, 936 payments, $7.4M across IRS, SSA and OPM, and the $18,940 refund is flagged before it pays. The real rings this is modeled on took investigators two years." }
+  ];
 
   // ---- agency signals: flags agencies send Treasury in the shared format ----
   // Each agency sees only its own payees; Treasury matches the flag against every
@@ -397,7 +420,7 @@
   var TREAS = {
     PROGRAMS: PROGRAMS, AGENCIES: AGENCIES, MAILBOX: MAILBOX, OPERATOR: OPERATOR, BATCHES: BATCHES, EMPLOYERS: EMPLOYERS, GRAPH: GRAPH, LEADS: LEADS,
     SCHEMES: SCHEMES, SCHEME_ORDER: SCHEME_ORDER, NETS: NETS, BRIDGES: BRIDGES, PLAN: PLAN, FLOW: FLOW, SPLIT: SPLIT,
-    IDENTITY: IDENTITY, AGENCY_STATS: AGENCY_STATS, SIGNALS: SIGNALS, DNP: DNP, TL_GROUPS: TL_GROUPS, TL_CATS: TL_CATS, TL: TL, LANES: LANES, LANE_ORDER: LANE_ORDER, SCHEMA: SCHEMA, AGENCY_USERS: AGENCY_USERS, ALERT: 75,
+    IDENTITY: IDENTITY, AGENCY_STATS: AGENCY_STATS, SIGNALS: SIGNALS, DNP: DNP, VICTIMS: VICTIMS, DISCOVERY: DISCOVERY, BUYABLE: BUYABLE, TL_GROUPS: TL_GROUPS, TL_CATS: TL_CATS, TL: TL, LANES: LANES, LANE_ORDER: LANE_ORDER, SCHEMA: SCHEMA, AGENCY_USERS: AGENCY_USERS, ALERT: 75,
     signalsFor: function (id) { return SIGNALS.filter(function (s) { return s.payment === id || s.matched.indexOf(id) >= 0; }); },
     tlFor: function (id) { var f = TL[id] || {}; return TL_CATS.map(function (c) { var r = f[c.k]; return { k: c.k, g: c.g, t: c.t, src: c.src, st: r ? r[0] : "pass", text: r ? r[1] : "No adverse findings" }; }); },
     // the signal an agency sent about this very payment (not one matched to it)

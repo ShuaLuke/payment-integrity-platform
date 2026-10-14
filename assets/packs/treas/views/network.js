@@ -35,7 +35,7 @@
         '<div class="page-head"><div><div class="page-title">Payment networks</div><div class="page-sub" id="n-sub">Payees linked by an account batch, mailbox, phone, employer or preparer — across agencies and payment types.</div></div>' +
         '<div style="display:flex;gap:10px;align-items:center"><div style="display:flex;background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:2px">' + btn("all", "All networks", F.NETS.length + " detected") + btn("N01", "Delmont network", "IRS · SSA · OPM · 9 account batches") + '</div>' + window.EXPORT.group("fnw") + '</div></div>' +
         '<div id="n-overview" hidden></div><div id="n-back" hidden style="margin-bottom:8px"></div>' +
-        '<div class="canvas" id="n-canvas" style="position:relative"></div><div class="legend" id="n-legend"></div><div id="n-boxes" style="display:flex;gap:10px;margin-top:4px"></div></div>';
+        '<div class="canvas" id="n-canvas" style="position:relative"></div><div class="legend" id="n-legend"></div><div id="n-boxes" style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap"></div><div id="n-extra"></div></div>';
       var current = "all";
       function setActive(s) { mount.querySelectorAll(".nscn").forEach(function (b) { var on = b.getAttribute("data-scn") === s; b.style.background = on ? "var(--card)" : "none"; b.style.color = on ? "var(--ink)" : "var(--text2)"; b.style.boxShadow = on ? "0 1px 2px rgba(0,17,65,.08)" : "none"; }); }
       function paint(scn) {
@@ -46,13 +46,22 @@
         back.innerHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (fromRec ? '<button class="btn primary" id="n-back-rec"><i class="ti ti-arrow-left"></i> Back to payment ' + esc(fromRec) + '</button>' : '') + '<button class="btn" id="n-back-btn">' + (fromRec ? '' : '<i class="ti ti-arrow-left"></i> ') + 'All networks</button></div>';
         document.getElementById("n-back-btn").onclick = function () { paint("all"); };
         var nbr = document.getElementById("n-back-rec"); if (nbr) nbr.onclick = function () { window.APP.goBack(); };
-        if (scn === "all") { ov.innerHTML = overviewHtml(); bx.innerHTML = ""; wireOverview(ov, paint); return; }
+        if (scn === "all") { ov.innerHTML = overviewHtml(); bx.innerHTML = ""; document.getElementById("n-extra").innerHTML = ""; wireOverview(ov, paint); return; }
         var m = scn === "N01" ? coreModel() : seedModel(F.net(scn));
         cv.style.height = "520px";
         lg.innerHTML = legendHtml(m);
         bx.innerHTML = boxesHtml(F.net(scn), m);
+        document.getElementById("n-extra").innerHTML = m.core ? discoveryHtml() : "";
         var rf = document.getElementById("n-refer"); if (rf) rf.onclick = function () { window.APP.openNetReferral("network", scn); };
         drawLayered(cv, m, 520);
+        var ph = document.getElementById("n-phone"), phoneOff = false;
+        if (ph) ph.onclick = function () {
+          phoneOff = !phoneOff;
+          var dim = ["A3", "A6"]; // the batches the phone fed: benefit and annuity redirects
+          cv.querySelectorAll(".nmid, .nreg, .nedge").forEach(function (el) { var hit = dim.some(function (b) { return el.classList.contains("nmid-" + b) || el.classList.contains("nreg-" + b) || el.classList.contains("nedge-" + b); }); el.style.opacity = phoneOff && hit ? 0.15 : ""; });
+          ph.innerHTML = phoneOff ? "Put the phone back" : "Take away the phone";
+          document.getElementById("n-phone-txt").innerHTML = phoneOff ? '<b style="color:var(--ink)">It holds.</b> Without the phone, the two redirect batches drop out: 62 accounts, 278 payments, $1.8M. The mailbox, the other seven batches and the eight employers still tie <b>' + (F.net("N01").payees - 62) + ' payees and ' + F.bigUsd(F.net("N01").atRisk - 1800000) + '</b> together, and the held refund is still in it.' : 'A real ring rotates burner phones. Ours reused one number for 37 changes, which is convenient. Take it away and see what\'s left.';
+        };
       }
       mount.querySelectorAll(".nscn").forEach(function (b) { b.onclick = function () { paint(b.getAttribute("data-scn")); }; });
       var head = ["Network", "Scheme", "Agencies", "States", "Payees", "Payments", "At risk (" + F.PLAN.fys + ")", "Status", "Risk"];
@@ -253,13 +262,13 @@
   // ---------- one network, down to the payment ----------
   function progBot(code) { var p = F.PROGRAMS[code]; return { id: code, name: p.agency + " · " + p.short.replace(/^SSA |^VA /, ""), full: p.name, sub: "", agency: p.agency }; }
   // the 12 payments drawn: the held one, the story's people, and one or two per batch
-  var SHOWN = ["PV-73194", "PV-71588", "PV-71522", "PV-72466", "PV-73215", "PV-71824", "PV-72455", "PV-72488", "PV-71409", "PV-71640", "PV-71760", "PV-72493"];
+  var SHOWN = ["PV-73194", "PV-71588", "PV-71522", "PV-72466", "PV-73215", "PV-71824", "PV-72455", "PV-72488", "PV-71409", "PV-71640", "PV-71760", "PV-72493", "PV-71915"];
   var AG_COLOR = { IRS: "#6929c4", SSA: "#0072c3", OPM: "#198038", VA: "#b28600", GSA: "#8a3800" };
   function coreModel() {
     var used = {}, n = F.net("N01"); F.GRAPH.forEach(function (g) { used[g.program] = 1; });
     var regs = F.GRAPH.filter(function (g) { return SHOWN.indexOf(g.id) >= 0; });
     return {
-      core: true, hub: { name: F.OPERATOR.name, sub: F.OPERATOR.batches + " account batches · 3 banks · 1 mailbox · 1 phone" },
+      core: true, hub: { name: F.OPERATOR.name, sub: F.OPERATOR.batches + " batches · 3 banks + 1 prepaid issuer · 1 mailbox · 1 phone · 8 shell employers" },
       title: n.payees + " payees · " + n.agencies.join(", ") + " · " + big(n.atRisk) + " · every payment passed every check",
       captions: { mid: ["Account batches", F.BATCHES.length + " shown of " + F.OPERATOR.batches + " · neighboring account numbers, each in a different name"], reg: ["Payments", "1 held + " + (regs.length - 1) + " of " + n.payments + " in the network · who the payee really is, from TrackLight"], bot: ["Certified by", "each agency sees only its own payees · the color on each payment"] },
       mids: F.BATCHES.map(function (b) { return { id: b.id, name: b.bank + " " + b.range, line2: b.accts + " accounts · opened " + b.opened.replace(/, 2026$/, ""), tag: b.role.toLowerCase(), risk: b.risk, regs: b.payments }; }),
@@ -296,10 +305,24 @@
       '<button class="btn' + (refs.length ? '' : ' primary') + '" id="n-refer" style="font-size:11px;padding:3px 9px"><i class="ti ti-' + (refs.length ? 'package' : 'send') + '"></i> ' + (refs.length ? 'View referrals' : 'Refer to ' + split.map(function (b) { return b.agency; }).join(", ")) + '</button></div>' +
       '<div style="font-size:11px;color:var(--text2);margin-bottom:4px">One referral per certifying agency: the ring, that agency\'s payments in it, and what to do.</div>' + chips + '</div>';
   }
+  // how the network was found: nine dated events, each from one lane
+  function discoveryHtml() {
+    var D = F.DISCOVERY, first = D[0].d, last = D[D.length - 1].d;
+    var weeks = Math.round((Date.parse(last) - Date.parse(first)) / 6048e5);
+    return '<div class="card" id="n-discovery" style="margin:10px 0 0;padding:0;overflow:hidden"><div style="padding:10px 14px;border-bottom:0.5px solid var(--border2);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><div style="font-weight:600;font-size:13px"><i class="ti ti-route" style="color:var(--accent-d)"></i> How this network was found</div><div style="font-size:11.5px;color:var(--text2)">' + D.length + ' events in ' + weeks + ' weeks, each from one source lane. The rings this is modeled on took investigators two years to assemble by hand.</div></div>' + F.laneLegend() + '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0">' + D.map(function (e, i) {
+        return '<div style="padding:10px 14px;border-top:0.5px solid var(--border2);border-right:0.5px solid var(--border2);display:flex;gap:10px"><div style="width:22px;height:22px;border-radius:50%;flex:none;background:' + (i === D.length - 1 ? "var(--high)" : "var(--accent)") + ';color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center">' + (i + 1) + '</div>' +
+          '<div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span class="mono" style="font-size:10.5px;color:var(--text3)">' + e.d + '</span>' + F.laneTag(e.lane, null, true) + '</div><div style="font-weight:600;font-size:12.5px;margin-top:2px">' + esc(e.t) + '</div><div style="font-size:11.5px;color:var(--text2);line-height:1.45;margin-top:1px">' + esc(e.x) + '</div></div></div>';
+      }).join("") + '</div></div>';
+  }
+  function phoneBox() {
+    return '<div style="flex:1;min-width:260px;background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:600;font-size:12.5px"><i class="ti ti-phone-off" style="color:var(--accent-d)"></i> Would it hold without the phone?</div><button class="btn" id="n-phone" style="font-size:11px;padding:3px 9px">Take away the phone</button></div>' +
+      '<div id="n-phone-txt" style="font-size:11.5px;color:var(--text2);line-height:1.5;margin-top:4px">A real ring rotates burner phones. Ours reused one number for 37 changes, which is convenient. Take it away and see what\'s left.</div></div>';
+  }
   function boxesHtml(n, m) {
     if (m.core) {
-      return referBox(n) + '<div style="flex:1;background:var(--high-bg);border:0.5px solid #f3c9c9;border-radius:8px;padding:10px 12px"><div style="font-weight:600;font-size:12.5px;color:var(--high-tx);margin-bottom:5px"><i class="ti ti-alert-triangle"></i> One organizer, ' + n.payees + ' payees</div>' +
-        '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">' + F.tlMark() + ' <span class="tag" style="background:var(--card)">1 deceased · 1 in custody · 2 stolen identities · 2 people on two accounts</span><span class="tag">' + F.OPERATOR.batches + ' account batches · 3 banks</span><span class="tag">1 mailbox · ' + F.MAILBOX.payees + ' payees</span><span class="tag">8 W-2 employers · 300 W-2s</span><span class="tag">phone ' + F.OPERATOR.phone + '</span><span class="tag">IRS · SSA · OPM</span></div>' +
+      return referBox(n) + phoneBox() + '<div style="flex:1;background:var(--high-bg);border:0.5px solid #f3c9c9;border-radius:8px;padding:10px 12px"><div style="font-weight:600;font-size:12.5px;color:var(--high-tx);margin-bottom:5px"><i class="ti ti-alert-triangle"></i> One organizer, ' + n.payees + ' payees</div>' +
+        '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">' + F.tlMark() + ' <span class="tag" style="background:var(--card)">1 deceased · 1 in custody · 2 stolen identities · 2 people on two accounts</span><span class="tag" style="background:var(--card)">' + F.VICTIMS.count + ' of ' + F.VICTIMS.of + ' identities from one clinic</span><span class="tag">' + F.OPERATOR.batches + ' account batches · ' + F.OPERATOR.banksText + '</span><span class="tag">1 mailbox · ' + F.MAILBOX.payees + ' payees</span><span class="tag">8 W-2 employers · 300 W-2s</span><span class="tag">phone ' + F.OPERATOR.phone + '</span><span class="tag">IRS · SSA · OPM</span></div>' +
         '<div style="font-size:11.5px;color:#5c1a14;line-height:1.5">Every one of these payments passed Do Not Pay, account ownership and TIN checks. In the data they share account batches opened days apart, one mailbox, eight employers formed in the last year and one phone. <b>' + n.payees + ' payees · ' + n.payments + ' payments · ' + big(n.atRisk) + '</b> in the pattern.</div></div>';
     }
     return '<div style="flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px"><div style="font-weight:600;font-size:12.5px;margin-bottom:6px"><i class="ti ti-affiliate"></i> ' + esc(n.name) + '</div>' +
@@ -335,7 +358,7 @@
     var hubE = m.mids.map(function (x) { var t = M[x.id]; return gE.append("path").attr("d", "M" + (W / 2) + "," + (yHub + 20) + " C" + (W / 2) + "," + (yHub + 50) + " " + t.x + "," + (yHub + 34) + " " + t.x + "," + (yMid - ch / 2)).attr("fill", "none").attr("stroke", "#c6362f").attr("stroke-width", 1.6).attr("stroke-dasharray", "4,3").attr("opacity", 0.75).datum({ mid: x.id }); });
     var regE = regs.map(function (r) {
       var a = R[r.id], t = M[r.mid];
-      return gE.append("path").attr("d", "M" + t.x + "," + (yMid + ch / 2) + " C" + t.x + "," + (yMid + ch / 2 + 30) + " " + a.x + "," + (yReg - 40) + " " + a.x + "," + (yReg - ph / 2)).attr("fill", "none").attr("stroke", r.seed ? "#c6362f" : "#a2a9b0").attr("stroke-width", r.seed ? 2 : 1).attr("opacity", 0.7).datum(r);
+      return gE.append("path").attr("class", "nedge nedge-" + r.mid).attr("d", "M" + t.x + "," + (yMid + ch / 2) + " C" + t.x + "," + (yMid + ch / 2 + 30) + " " + a.x + "," + (yReg - 40) + " " + a.x + "," + (yReg - ph / 2)).attr("fill", "none").attr("stroke", r.seed ? "#c6362f" : "#a2a9b0").attr("stroke-width", r.seed ? 2 : 1).attr("opacity", 0.7).datum(r);
     });
     var bw = Math.min(380, W - 40), hub = gN.append("g").attr("transform", "translate(" + (W / 2 - bw / 2) + "," + (yHub - 20) + ")");
     hub.append("rect").attr("width", bw).attr("height", 40).attr("rx", 9).attr("fill", "#001141");
@@ -343,7 +366,7 @@
     hub.append("text").attr("x", 14).attr("y", 31).attr("fill", "#a6c8ff").attr("font-size", 9.5).text(trunc(m.hub.sub, 64));
     var midN = m.mids.map(function (x) {
       var t = M[x.id], c = x.risk >= 80 ? "#c6362f" : "#c77d11";
-      var g = gN.append("g").attr("transform", "translate(" + (t.x - cw / 2) + "," + (yMid - ch / 2) + ")").attr("cursor", "pointer").datum({ mid: x.id });
+      var g = gN.append("g").attr("class", "nmid nmid-" + x.id).attr("transform", "translate(" + (t.x - cw / 2) + "," + (yMid - ch / 2) + ")").attr("cursor", "pointer").datum({ mid: x.id });
       g.append("rect").attr("width", cw).attr("height", ch).attr("rx", 8).attr("fill", "#fff").attr("stroke", c).attr("stroke-width", 1.4);
       g.append("rect").attr("width", 4).attr("height", ch - 12).attr("y", 6).attr("rx", 2).attr("fill", c);
       g.append("text").attr("x", 11).attr("y", 16).attr("font-size", 11).attr("font-weight", 600).attr("fill", "#001141").text(trunc(x.name, Math.floor(cw / 6.4)));
@@ -355,7 +378,7 @@
     var kf = function (n) { return "$" + (n / 1000).toFixed(1) + "K"; };
     var shortName = function (n) { var p = String(n || "").replace(/ [A-Z]\. /, " ").split(" "); return p.length > 1 ? p[0][0] + ". " + p.slice(1).join(" ") : n; };
     var regN = regs.map(function (r) {
-      var a = R[r.id], c = agColor(r), g = gN.append("g").attr("transform", "translate(" + a.x + "," + yReg + ")").attr("cursor", "pointer").datum(r);
+      var a = R[r.id], c = agColor(r), g = gN.append("g").attr("class", "nreg nreg-" + r.mid).attr("transform", "translate(" + a.x + "," + yReg + ")").attr("cursor", "pointer").datum(r);
       var cur = r.cur && !r.seed;
       g.append("rect").attr("x", -a.w / 2).attr("y", -ph / 2).attr("width", a.w).attr("height", ph).attr("rx", named ? 8 : 11).attr("fill", r.seed ? "#c6362f" : cur ? "#edf5ff" : "#fff").attr("stroke", r.seed ? "#c6362f" : cur ? "#0f62fe" : c).attr("stroke-width", r.seed ? 2 : cur ? 2.4 : 1.4).attr("stroke-dasharray", r.state === "pending" ? "3,2" : null);
       if (cur) g.append("text").attr("y", -ph / 2 - 6).attr("text-anchor", "middle").attr("font-size", 8.5).attr("font-weight", 700).attr("letter-spacing", "0.04em").attr("fill", "#0f62fe").text("THIS PAYMENT");
