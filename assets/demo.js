@@ -118,8 +118,11 @@
   var TOUR = (function () { if (PACK.shortOnly) return "short"; try { var m = /[?&]tour=(short|full)/.exec(location.search); if (m) return m[1]; return localStorage.getItem("pivot-tour") || "full"; } catch (e) { return "full"; } })();
   var STEPS = TOUR === "short" ? SHORT_STEPS : FULL_STEPS;
 
+  var MIN = (function () { try { return localStorage.getItem("pivot-ribbon-min") === "1"; } catch (e) { return false; } })();
   var DEMO = {
     i: 0,
+    // collapse the talk track to the one-line strip (title, trail, Prev/Next stay)
+    toggleMin: function () { MIN = !MIN; try { localStorage.setItem("pivot-ribbon-min", MIN ? "1" : "0"); } catch (e) {} DEMO.render(); },
     start: function () { DEMO.show(); DEMO.go(0); },
     show: function () { q("#demo-ribbon").style.display = "block"; var p = q("#demo-pill"); if (p) p.style.display = "none"; },
     hide: function () { q("#demo-ribbon").style.display = "none"; document.documentElement.style.setProperty("--ribbon-h", "0px"); DEMO.pill(); window.APP.auditLog("DEMO_HIDDEN", "Guided demo ribbon dismissed"); },
@@ -153,13 +156,16 @@
         '<div style="display:flex;align-items:center;gap:6px;white-space:nowrap">' +
         '<button id="demo-prev" class="btn" style="padding:4px 9px;font-size:12px;background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.25)"' + (DEMO.i === 0 ? " disabled" : "") + '><i class="ti ti-chevron-left"></i></button>' +
         '<button id="demo-next" class="btn" style="padding:4px 11px;font-size:12px;background:#0f62fe;color:#ffffff;border-color:#0f62fe"' + (DEMO.i === N - 1 ? " disabled" : "") + '>Next <i class="ti ti-chevron-right"></i></button>' +
+        '<button id="demo-min" title="' + (MIN ? "Show the talk track" : "Minimize the talk track") + '" class="btn" style="padding:4px 7px;font-size:12px;background:transparent;color:#c1c7cd;border-color:rgba(255,255,255,0.2)"><i class="ti ti-chevron-' + (MIN ? "down" : "up") + '"></i></button>' +
         '<button id="demo-close" title="Hide demo" class="btn" style="padding:4px 7px;font-size:12px;background:transparent;color:#c1c7cd;border-color:rgba(255,255,255,0.2)"><i class="ti ti-x"></i></button>' +
         '</div></div>' +
-        '<div style="font-size:12.5px;color:#dde1e6;margin-top:5px;line-height:1.45;height:56px;overflow-y:auto"><span style="font-weight:500;color:#fff">' + titlePrefix + s.t + '.</span> ' + s.n + '</div>' +
+        (MIN ? '<div style="font-size:12px;color:#dde1e6;margin-top:4px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="font-weight:500;color:#fff">' + titlePrefix + s.t + '</span></div>'
+          : '<div style="font-size:12.5px;color:#dde1e6;margin-top:5px;line-height:1.45;height:56px;overflow-y:auto"><span style="font-weight:500;color:#fff">' + titlePrefix + s.t + '.</span> ' + s.n + '</div>') +
         '</div>';
       q("#demo-prev").onclick = DEMO.prev;
       q("#demo-next").onclick = DEMO.next;
       q("#demo-close").onclick = DEMO.hide;
+      q("#demo-min").onclick = DEMO.toggleMin;
       q("#demo-ribbon").querySelectorAll("[data-tour]").forEach(function (b) { b.onclick = function () { var t = b.getAttribute("data-tour"); if (t !== TOUR) DEMO.setTour(t); }; });
       q("#demo-ribbon").querySelectorAll("[data-go]").forEach(function (d) { d.onclick = function () { DEMO.go(+d.getAttribute("data-go")); }; });
       try { document.documentElement.style.setProperty("--ribbon-h", (q("#demo-ribbon").offsetHeight || 0) + "px"); } catch (e) {}

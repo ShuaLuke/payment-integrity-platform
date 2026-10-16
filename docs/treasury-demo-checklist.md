@@ -5,7 +5,7 @@ IRS window: the same link with `&sys=irs` (or "New window" on a package).
 
 ## The night before
 - [ ] `node tools/click-test-treas.cjs` passes against the live site (`SITE=https://shualuke.github.io/payment-integrity-platform/`).
-- [ ] Run the 13-step tour once, end to end, in the browser you will present from.
+- [ ] Run the 12-step tour once, end to end, in the browser you will present from.
 - [ ] Decide one tab or two windows (below). Rehearse that one.
 
 ## Browser setup (the presenting machine)

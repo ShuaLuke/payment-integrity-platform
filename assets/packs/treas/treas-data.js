@@ -166,7 +166,7 @@
         { sev: "high", label: "SSA flagged a deposit changed by phone", detail: "SSA raised it on Oct 1. On 2026-05-28 a phone call changed Ms. Pruitt's direct deposit from her credit union of 19 years to Lumen Direct ••3317, opened 16 days earlier in a batch of 38 (••3301–3349).", src: "SSA · SIG-SSA-0412", lane: "flag" },
         { sev: "high", label: "Mailing address moved to the mailbox", detail: "The same call changed her mailing address to PMB 212, Carver Mill, GA, the mailbox behind the flagged refunds.", src: "Agency payment files", lane: "treas" },
         { sev: "high", label: "Beneficiary reported non-receipt", detail: "Ms. Pruitt reported the June–September payments missing on 2026-09-30.", src: "SSA · SIG-SSA-0412", lane: "flag" },
-        { sev: "med", label: "Same phone on other changes", detail: "The calling number, (470) 555-0148, made 37 direct-deposit changes across SSA and OPM payees since April.", src: "SSA and OPM change logs", lane: "treas" }
+        { sev: "med", label: "Same phone on other changes", detail: "The calling number, (470) 555-0148, made 37 direct-deposit changes across SSA and OPM payees since April: 37 payees, 278 payments, $1.8M paid into network accounts.", src: "SSA and OPM change logs", lane: "treas" }
       ] },
     { id: "PV-71522", mode: "retrospective", program: "REF", payeeName: "Terrence D. Okafor", city: "Carver Mill, GA", address: MAILBOX.line, bank: "Brightpath Bank", acct: "••6203", acctOpened: "2026-09-08", batch: "A1", schedule: "IRS refund schedule 26-0915-0207",
       submitted: "2026-09-15 05:40", paidDate: "2026-09-16", riskScore: 89, confidence: 0.88, recommendedAction: "confirm", fwaType: "Stolen-identity refund", network: "N01", amount: 16210, status: "New", assignee: null,

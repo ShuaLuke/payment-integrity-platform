@@ -82,7 +82,8 @@ const hide = page => page.evaluate(() => { window.DEMO.hide(); const p = documen
 const CLIPS = {
   // slide 2: how a federal payment moves, one payment traced to the mailbox
   async ingest(page) {
-    await fresh(page, 0);
+    await fresh(page, null);
+    await page.evaluate(() => { window.APP.nav("edi"); }); await sleep(600);
     await rec(page, async () => {
       await sleep(700);
       const tiers = await page.$$(".mf-tier");
@@ -97,7 +98,7 @@ const CLIPS = {
   },
   // slide 3: pre-payment review, hold the $18,940 refund
   async detect(page) {
-    await fresh(page, 1);
+    await fresh(page, 0);
     await rec(page, async () => {
       await sleep(600);
       await moveToEl(page, '.pp-rec[data-id="PV-73194"]', 1100); await sleep(3400);
@@ -108,7 +109,7 @@ const CLIPS = {
   },
   // slide 4: pull the thread — everyone paid at the mailbox
   async explain(page) {
-    await fresh(page, 3);
+    await fresh(page, 2);
     await page.evaluate(() => { if (window.COPILOT) window.COPILOT.close(); });
     await page.evaluate(() => { const p = document.getElementById("r-panel"), nav = document.querySelector(".topnav"); window.scrollTo(0, p.getBoundingClientRect().top + window.scrollY - nav.getBoundingClientRect().bottom - 60); });
     await sleep(400);
@@ -125,7 +126,7 @@ const CLIPS = {
   },
   // slide 5: the three agents in the Investigative Assistant
   async agents(page) {
-    await fresh(page, 3);
+    await fresh(page, 2);
     const panel = await page.evaluateHandle(() => [...document.querySelectorAll("body > div")].find(d => d.style.width === "370px"));
     const scroller = await panel.evaluate(p => { const s = [...p.querySelectorAll("div")].find(d => d.scrollHeight > d.clientHeight + 40 && getComputedStyle(d).overflowY !== "visible"); if (s) s.id = "rec-scroll"; return !!s; });
     await rec(page, async () => {
@@ -159,7 +160,7 @@ const CLIPS = {
   },
   // slide 7: the network, down to the payment
   async chain(page) {
-    await fresh(page, 6);
+    await fresh(page, 4);
     await page.evaluate(() => { const b = document.getElementById("cp-fab"); if (b) b.style.display = "none"; });
     await page.evaluate(() => { const cv = document.getElementById("n-canvas"), nav = document.querySelector(".topnav"); window.scrollTo(0, cv.getBoundingClientRect().top + window.scrollY - nav.getBoundingClientRect().bottom - 8); });
     await sleep(500);
@@ -176,7 +177,7 @@ const CLIPS = {
   },
   // slide 8: every network, and the links between them
   async allnets(page) {
-    await fresh(page, 7);
+    await fresh(page, 6);
     await page.evaluate(() => { const el = document.getElementById("nv-map"), nav = document.querySelector(".topnav"); window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - nav.getBoundingClientRect().bottom - 8); });
     await sleep(2500);
     const hub = id => page.evaluateHandle(id => [...document.querySelectorAll("#nv-map circle")].find(c => c.__data__ && c.__data__.id === id), id);
@@ -194,7 +195,7 @@ const CLIPS = {
   },
   // new slide: Do Not Pay beside TrackLight on the held refund
   async tracklight(page) {
-    await fresh(page, 2);
+    await fresh(page, 1);
     await page.evaluate(() => { const p = document.getElementById("r-panel"), nav = document.querySelector(".topnav"); window.scrollTo(0, p.getBoundingClientRect().top + window.scrollY - nav.getBoundingClientRect().bottom - 12); });
     await sleep(400);
     await rec(page, async () => {
@@ -209,7 +210,7 @@ const CLIPS = {
   },
   // new slide: the recommendation package, two ways, then send
   async handoff(page) {
-    await fresh(page, 8);
+    await fresh(page, 7);
     await page.evaluate(() => { const f = document.getElementById("cp-fab"); if (f) f.style.display = "none"; }); // it sits over the Send button
     await rec(page, async () => {
       await sleep(700);
@@ -227,7 +228,7 @@ const CLIPS = {
   },
   // new slide: IRS decides in its own system, and Treasury sees it
   async irs(page) {
-    await fresh(page, 9);
+    await fresh(page, 8);
     await rec(page, async () => {
       await sleep(800);
       await click(page, "#ap-login", 1100); await sleep(1600);
@@ -242,7 +243,7 @@ const CLIPS = {
   },
   // new slide: how the network was found
   async discovery(page) {
-    await fresh(page, 5);
+    await fresh(page, 3);
     await page.evaluate(() => { const b = document.getElementById("cp-fab"); if (b) b.style.display = "none"; const el = document.getElementById("n-discovery"), nav = document.querySelector(".topnav"); window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - nav.getBoundingClientRect().bottom - 8); });
     await sleep(500);
     await rec(page, async () => {
@@ -253,7 +254,7 @@ const CLIPS = {
   },
   // new slide: the whole ring, referred, and IRS opens a case
   async ring(page) {
-    await fresh(page, 11);
+    await fresh(page, 10);
     await page.evaluate(() => { const b = document.getElementById("cp-fab"); if (b) b.style.display = "none"; });
     await rec(page, async () => {
       await sleep(600);
@@ -270,7 +271,7 @@ const CLIPS = {
   },
   // slide 9: from one refund to $100.4M
   async funnel(page) {
-    await fresh(page, 7);
+    await fresh(page, 6);
     await page.evaluate(() => { window.scrollTo(0, 0); const f = document.getElementById("nv-funnel"); if (f) { f.style.outline = "2px solid #0f62fe"; f.style.outlineOffset = "2px"; } });
     await sleep(300);
     await rec(page, async () => {

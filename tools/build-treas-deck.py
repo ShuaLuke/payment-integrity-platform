@@ -40,6 +40,11 @@ for k, (n, clip, after) in enumerate(ADDED):
     prels = prels.replace("</Relationships>", f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide{n}.xml"/></Relationships>')
     after_rid = re.search(r'Id="(rId\d+)"[^>]*Target="slides/slide%d\.xml"' % after, prels).group(1)
     pres = re.sub(r'(<p:sldId id="\d+" r:id="%s"/>)' % after_rid, r'\1<p:sldId id="%d" r:id="%s"/>' % (next_sid + k, rid), pres)
+# the deck in the tour's order: refund → how it was found → the ring → Gloria → every network → hand-off → the whole ring
+FINAL = [1, 2, 3, 13, 4, 5, 16, 7, 6, 8, 9, 14, 15, 17, 10, 11, 12]
+ridOf = dict((int(n), r) for r, n in re.findall(r'Id="(rId\d+)"[^>]*Target="slides/slide(\d+)\.xml"', prels))
+ids = re.findall(r'<p:sldId id="(\d+)" r:id="(rId\d+)"/>', pres)
+pres = re.sub(r'<p:sldIdLst>.*?</p:sldIdLst>', '<p:sldIdLst>' + ''.join('<p:sldId id="%d" r:id="%s"/>' % (256 + k, ridOf[n]) for k, n in enumerate(FINAL)) + '</p:sldIdLst>', pres, flags=re.S)
 wr("[Content_Types].xml", ct); wr("ppt/_rels/presentation.xml.rels", prels); wr("ppt/presentation.xml", pres)
 app = rd("docProps/app.xml"); n_all = 12 + len(ADDED)
 wr("docProps/app.xml", re.sub(r"<Slides>\d+</Slides>", f"<Slides>{n_all}</Slides>", re.sub(r"<Notes>\d+</Notes>", f"<Notes>{n_all}</Notes>", app)))
